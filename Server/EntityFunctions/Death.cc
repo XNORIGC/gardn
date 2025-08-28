@@ -168,6 +168,15 @@ void entity_on_death(Simulation *sim, Entity const &ent) {
             }
             PetalTracker::add_petal(sim, PetalID::kCorruption);
             camera.set_inventory(loadout_slots_at_level(respawn_level) - 1, PetalID::kCorruption);
+            for (uint16_t i = 0; i < ENTITY_CAP; ++i) {
+                EntityID id(i, 0);  
+                if (!sim->ent_exists(id)) continue;
+                Entity& target = sim->get_ent(id); 
+                if (target.mob_id == MobID::kTargetDummy) {
+                    target.health = (target.health >= 1000) ? target.health - 1000 : 0;
+                    break;
+                }
+            }
         }
         #endif
         PetalTracker::add_petal(sim, PetalID::kRose);
