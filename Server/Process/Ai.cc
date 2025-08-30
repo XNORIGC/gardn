@@ -7,6 +7,7 @@
 #include <Shared/StaticData.hh>
 
 #include <cmath>
+#include <cfloat>
 
 static void _focus_lose_clause(Entity &ent, Vector const &v) {
     if (v.magnitude() > 1.5 * MOB_DATA[ent.mob_id].attributes.aggro_radius) ent.target = NULL_ENTITY;
@@ -361,34 +362,89 @@ static void tick_digger(Simulation *sim, Entity &ent) {
 static void tick_hornet_new_ai(Simulation *sim, Entity &ent) {
     if (sim->ent_alive(ent.target)) {
         Entity &target = sim->get_ent(ent.target);
-        Vector v(target.x - ent.x, target.y - ent.y);
-        _focus_lose_clause(ent, v);
-
-        float target_angle = v.angle();
-        float rotation_step = M_PI / (TPS / 4); 
-        if (std::abs(target_angle - ent.angle) > rotation_step) {
-            ent.set_angle(ent.angle + rotation_step * ((target_angle > ent.angle) ? 1 : -1));
-        } else {
-            ent.set_angle(target_angle);
-        }
-
-        if (ent.ai_tick >= TPS) { 
-            ent.ai_tick = 0;
-            Vector missile_dir = v;
-            missile_dir.set_magnitude(300.0f); 
-
-            Entity &missile = alloc_petal(sim, PetalID::kMissile, ent);
-            missile.damage = 10;
-            missile.health = missile.max_health = 10;
-            entity_set_despawn_tick(missile, 3 * TPS);
-            missile.set_angle(missile_dir.angle());
-            missile.acceleration = missile_dir;
-
-            target_angle = ent.angle - M_PI;
-            if (std::abs(target_angle - ent.angle) > rotation_step) {
-                ent.set_angle(ent.angle + rotation_step * ((target_angle > ent.angle) ? 1 : -1));
-            } else {
-                ent.set_angle(target_angle);
+        
+        float bullet_speed = 300.0f;
+        float rotation_step = M_PI / (TPS / 8);
+        
+        Vector relative_pos(target.x - ent.x, target.y - ent.y);
+        float distance = relative_pos.magnitude();
+        
+        switch (ent.ai_state) {
+            case AIState::kIdle: {
+                Vector player_velocity = target.velocity;
+                float time_to_hit = distance / bullet_speed;
+                
+                Vector predicted_pos(
+                    target.x + player_velocity.x * time_to_hit,
+                    target.y + player_velocity.y * time_to_hit
+                );
+                
+                Vector to_predicted(predicted_pos.x - ent.x, predicted_pos.y - ent.y);
+                ent.heading_angle = to_predicted.angle();
+                
+                if (ent.ai_tick >= TPS) {
+                    ent.ai_state = AIState::kRotateToTarget;
+                    ent.ai_tick = 0;
+                }
+                break;
+            }
+            
+            case AIState::kRotateToTarget: {
+                float current_angle = ent.angle;
+                float angle_diff = ent.heading_angle - current_angle;
+                if (angle_diff > M_PI) angle_diff -= 2 * M_PI;
+                if (angle_diff < -M_PI) angle_diff += 2 * M_PI;
+                
+                if (fabs(angle_diff) > rotation_step) {
+                    ent.set_angle(current_angle + (angle_diff > 0 ? rotation_step : -rotation_step));
+                } else {
+                    ent.set_angle(ent.heading_angle);
+                    ent.ai_state = AIState::kWaitToFire;
+                    ent.ai_tick = 0;
+                }
+                break;
+            }
+            
+            case AIState::kWaitToFire: {
+                float current_angle = ent.angle;
+                float angle_diff = ent.heading_angle - current_angle;
+                if (angle_diff > M_PI) angle_diff -= 2 * M_PI;
+                if (angle_diff < -M_PI) angle_diff += 2 * M_PI;
+                
+                bool is_aligned = fabs(angle_diff) < rotation_step * 0.1f;
+                
+                if (ent.ai_tick >= 0.45f * TPS && is_aligned) {
+                    ent.ai_tick = 0;
+                    
+                    Entity &missile = alloc_petal(sim, PetalID::kMissile, ent);
+                    missile.damage = 10;
+                    missile.health = missile.max_health = 10;
+                    entity_set_despawn_tick(missile, 3 * TPS);
+                    missile.set_angle(ent.angle);
+                    missile.acceleration.unit_normal(ent.angle).set_magnitude(bullet_speed);
+                    
+                    ent.ai_state = AIState::kRotateBack;
+                }
+                break;
+            }
+            
+            case AIState::kRotateBack: {
+                float original_angle = ent.heading_angle + M_PI;
+                if (original_angle > 2 * M_PI) original_angle -= 2 * M_PI;
+                
+                float current_angle = ent.angle;
+                float angle_diff = original_angle - current_angle;
+                if (angle_diff > M_PI) angle_diff -= 2 * M_PI;
+                if (angle_diff < -M_PI) angle_diff += 2 * M_PI;
+                
+                if (fabs(angle_diff) > rotation_step) {
+                    ent.set_angle(current_angle + (angle_diff > 0 ? rotation_step : -rotation_step));
+                } else {
+                    ent.set_angle(original_angle);
+                    ent.ai_state = AIState::kIdle;
+                    ent.ai_tick = 0;
+                }
+                break;
             }
         }
     } else {
@@ -405,7 +461,7 @@ static void tick_hornet_new_ai(Simulation *sim, Entity &ent) {
 void tick_ai_behavior(Simulation *sim, Entity &ent) {
     if (ent.pending_delete) return;
     if (sim->ent_alive(ent.seg_head)) return;
-    ent.acceleration.set(0,0);
+    ent.acceleration.set(0, 0);
     if (!(ent.parent == NULL_ENTITY)) {
         if (!sim->ent_alive(ent.parent)) {
             if (BIT_AT(ent.flags, EntityFlags::kDieOnParentDeath))
@@ -425,7 +481,7 @@ void tick_ai_behavior(Simulation *sim, Entity &ent) {
         ent.ai_tick = 0;
         return;
     }
-    switch(ent.mob_id) {
+    switch (ent.mob_id) {
         case MobID::kBabyAnt:            
         case MobID::kLadybug:
         case MobID::kMassiveLadybug:
@@ -462,11 +518,12 @@ void tick_ai_behavior(Simulation *sim, Entity &ent) {
             tick_default_aggro(sim, ent, 0.95);
             break;
         case MobID::kQueenAnt:
-            if (ent.lifetime % (2 * TPS) == 0) {
+            if ((ent.lifetime + 1) % (2 * TPS) == 0) {
                 Vector behind;
                 behind.unit_normal(ent.angle + M_PI);
                 behind *= ent.radius;
                 Entity &spawned = alloc_mob(sim, MobID::kSoldierAnt, ent.x + behind.x, ent.y + behind.y, ent.team);
+                // entity_set_despawn_tick(spawned, 5 * 2 * TPS);
                 spawned.set_parent(ent.parent);
             }
             if (ent.lifetime + 1 % (10 * 60 * TPS) == 0) {
@@ -474,21 +531,26 @@ void tick_ai_behavior(Simulation *sim, Entity &ent) {
                 behind.unit_normal(ent.angle + M_PI);
                 behind *= ent.radius;
                 Entity &spawned = alloc_mob(sim, MobID::kQueenAnt, ent.x + behind.x, ent.y + behind.y, ent.team);
+                // entity_set_despawn_tick(spawned, 5 * 10 * 60 * TPS);
                 spawned.set_parent(ent.parent);
             }
             tick_default_aggro(sim, ent, 0.95);
             break;
         case MobID::kHornet:
-        #ifdef DEV
-            if (BIT_AT(ent.custom_flags, EntityCustomFlags::kIsVariant)) { // 生成时设置的标记
+            if (ent.ai_tick == 0) {
+                if ((ent.lifetime % (2 * TPS)) < TPS) {
+                    BIT_SET(ent.custom_flags, EntityCustomFlags::kIsVariant);
+                } else {
+                    BIT_UNSET(ent.custom_flags, EntityCustomFlags::kIsVariant);
+                }
+            }
+            
+            if (BIT_AT(ent.custom_flags, EntityCustomFlags::kIsVariant)) {
                 tick_hornet_new_ai(sim, ent);
             } else {
                 tick_hornet_aggro(sim, ent);
             }
             break;
-        #else
-            tick_hornet_aggro(sim, ent);
-        #endif
         case MobID::kBoulder:
         case MobID::kRock:
         case MobID::kCactus:
@@ -501,6 +563,6 @@ void tick_ai_behavior(Simulation *sim, Entity &ent) {
             tick_digger(sim, ent);
         default:
             break;
-    }
+    }//
     ++ent.ai_tick;
 }

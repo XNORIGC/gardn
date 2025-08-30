@@ -9,6 +9,7 @@
 
 #include <format>
 #include <map>
+#include <cmath>
 
 using namespace Ui;
 
@@ -17,6 +18,7 @@ Element *Ui::UiLoadout::petal_tooltips[PetalID::kNumPetals] = {nullptr};
 static void make_petal_tooltip(PetalID::T id) {
     PetalData const &d = PETAL_DATA[id];
     PetalAttributes const &a = d.attributes;
+    PoisonDamage const &p = a.poison_damage;
     std::string rld_str = d.reload == 0 ? "" :
         a.secondary_reload == 0 ? std::format("{:g}s ⟳", d.reload) : 
         std::format("{:g}s + {:g}s ⟳", d.reload, a.secondary_reload);
@@ -33,23 +35,23 @@ static void make_petal_tooltip(PetalID::T id) {
         (d.health || d.damage) ? new Ui::Element(0,10) : nullptr,
         d.health ? new Ui::HContainer({
             new Ui::StaticText(12, "Health: ", { .fill = 0xff66ff66, .h_justify = Style::Left }),
-            new Ui::StaticText(12, std::format("{:g}", d.health), { .fill = 0xffffffff, .h_justify = Style::Left })
+            new Ui::StaticText(12, std::format("{}", std::round(d.health * 10) / 10), { .fill = 0xffffffff, .h_justify = Style::Left })
         }, 0, 0, { .h_justify = Style::Left }) : nullptr,
         d.damage ? new Ui::HContainer({
             new Ui::StaticText(12, "Damage: ", { .fill = 0xffff6666, .h_justify = Style::Left }),
-            new Ui::StaticText(12, std::format("{:g}", d.damage), { .fill = 0xffffffff, .h_justify = Style::Left })
+            new Ui::StaticText(12, std::format("{}", std::round(d.damage * 10) / 10), { .fill = 0xffffffff, .h_justify = Style::Left })
         }, 0, 0, { .h_justify = Style::Left }) : nullptr,
         a.constant_heal ? new Ui::HContainer({
             new Ui::StaticText(12, "Heal: ", { .fill = 0xffff94c9, .h_justify = Style::Left }),
-            new Ui::StaticText(12, std::format("{:g}/s", a.constant_heal * TPS), { .fill = 0xffffffff, .h_justify = Style::Left })
+            new Ui::StaticText(12, std::format("{}/s", std::round(a.constant_heal * 10) / 10), { .fill = 0xffffffff, .h_justify = Style::Left })
         }, 0, 0, { .h_justify = Style::Left }) : nullptr,
         a.burst_heal ? new Ui::HContainer({
             new Ui::StaticText(12, "Heal: ", { .fill = 0xffff94c9, .h_justify = Style::Left }),
-            new Ui::StaticText(12, std::format("{:g}", a.burst_heal), { .fill = 0xffffffff, .h_justify = Style::Left })
+            new Ui::StaticText(12, std::format("{}", std::round(a.burst_heal * 10) / 10), { .fill = 0xffffffff, .h_justify = Style::Left })
         }, 0, 0, { .h_justify = Style::Left }) : nullptr,
-        a.poison_damage.damage ? new Ui::HContainer({
+        p.damage ? new Ui::HContainer({
             new Ui::StaticText(12, "Poison: ", { .fill = 0xffce76db, .h_justify = Style::Left }),
-            new Ui::StaticText(12, std::format("{:g}", a.poison_damage.damage) + (a.poison_damage.time ? std::format(" ({:.2g}/s)", a.poison_damage.damage / a.poison_damage.time) : ""), { .fill = 0xffffffff, .h_justify = Style::Left })
+            new Ui::StaticText(12, std::format("{} ({}/s)", std::round(p.damage * p.time * 10) / 10, std::round(p.damage * 10) / 10), { .fill = 0xffffffff, .h_justify = Style::Left })
         }, 0, 0, { .h_justify = Style::Left }) : nullptr,
         a.spawns != MobID::kNumMobs ? new Ui::HContainer({
             new Ui::StaticText(12, "Contents: ", { .fill = 0xffd2eb34, .h_justify = Style::Left }),

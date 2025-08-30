@@ -152,7 +152,10 @@ namespace AIState {
         kIdle,
         kIdleMoving,
         kReturning,
-        kBasicAggro
+        kBasicAggro,
+        kRotateToTarget,
+        kWaitToFire,
+        kRotateBack
     };
 };
 
