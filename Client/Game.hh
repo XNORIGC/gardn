@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Client/Render/Renderer.hh>
-#include <Client/Input.hh>
 #include <Client/Socket.hh>
 #include <Client/Ui/Ui.hh>
 #include <Client/StaticData.hh>
@@ -22,6 +21,7 @@ namespace Game {
     extern EntityID player_id;
     extern std::string nickname;
     extern std::string password;
+    extern std::string disconnect_message;
     extern std::array<uint8_t, PetalID::kNumPetals> seen_petals;
     extern std::array<uint8_t, MobID::kNumMobs> seen_mobs;
     
@@ -34,13 +34,12 @@ namespace Game {
 
     extern uint32_t respawn_level;
 
-    extern PetalID::T cached_loadout[2 * MAX_SLOT_COUNT];
+    extern std::array<PetalID::T, 2 * MAX_SLOT_COUNT> cached_loadout;
 
     extern uint8_t loadout_count;
     extern uint8_t simulation_ready;
     extern uint8_t on_game_screen;
     extern uint8_t show_debug;
-    extern uint8_t is_mobile;
 
     extern uint8_t show_chat;
     extern std::string chat_text;
@@ -48,7 +47,7 @@ namespace Game {
         std::string text;
     };
 
-    // ¹ã²¥ÏûÏ¢ÈÝÆ÷
+    // ï¿½ã²¥ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
     extern std::vector<BroadcastMessage> broadcasts;
 
     void init();

@@ -6,23 +6,25 @@
 #include <Server/Spawn.hh>
 #include <Server/picosha2.h>
 
+#include <Helpers/UTF8.hh>
+
 #include <Shared/Binary.hh>
 #include <Shared/Config.hh>
-#include <Shared/Helpers.hh>
 
+#include <array>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
 #include <limits>
 
-static uint32_t const RARITY_TO_XP[RarityID::kNumRarities] = { 2, 10, 50, 200, 1000, 5000, 0 };
+constexpr std::array<uint32_t, RarityID::kNumRarities> RARITY_TO_XP = { 2, 10, 50, 200, 1000, 5000, 0 };
 
 Client::Client() : game(nullptr) {}
 
 void Client::init() {
     DEBUG_ONLY(assert(game == nullptr);)
-        Server::game.add_client(this);
+    Server::game.add_client(this);    
 }
 
 void Client::remove() {
@@ -30,44 +32,37 @@ void Client::remove() {
     game->remove_client(this);
 }
 
-void Client::disconnect() {
+void Client::disconnect(int reason, std::string const &message) {
     if (ws == nullptr) return;
     remove();
-    ws->end();
+    ws->end(reason, message);
 }
 
 uint8_t Client::alive() {
     if (game == nullptr) return false;
-    Simulation* simulation = &game->simulation;
-    return simulation->ent_exists(camera)
-        && simulation->ent_exists(simulation->get_ent(camera).player);
+    Simulation *simulation = &game->simulation;
+    return simulation->ent_exists(camera) 
+    && simulation->ent_exists(simulation->get_ent(camera).player);
 }
 
-#define VALIDATE(expr) if (!expr) { client->disconnect(); return; }
-
-void Client::on_message(WebSocket* ws, std::string_view message, uint64_t code) {
+void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) {
     if (ws == nullptr) return;
-    uint8_t const* data = reinterpret_cast<uint8_t const*>(message.data());
+    uint8_t const *data = reinterpret_cast<uint8_t const *>(message.data());
     Reader reader(data);
     Validator validator(data, data + message.size());
-    Client* client = ws->getUserData();
+    Client *client = ws->getUserData();
     if (client == nullptr) {
-        ws->end();
+        ws->end(CloseReason::kServer, "Server Error");
         return;
     }
     if (!client->verified) {
-        VALIDATE(validator.validate_uint8());
+        if (client->check_invalid(validator.validate_uint8() && validator.validate_uint64())) return;
         if (reader.read<uint8_t>() != Serverbound::kVerify) {
-            //disconnect
             client->disconnect();
             return;
         }
-        VALIDATE(validator.validate_uint64());
         if (reader.read<uint64_t>() != VERSION_HASH) {
-            Writer writer(Server::OUTGOING_PACKET);
-            writer.write<uint8_t>(Clientbound::kOutdated);
-            client->send_packet(writer.packet, writer.at - writer.packet);
-            client->disconnect();
+            client->disconnect(CloseReason::kOutdated, "Outdated Version");
             return;
         }
         client->verified = 1;
@@ -78,131 +73,130 @@ void Client::on_message(WebSocket* ws, std::string_view message, uint64_t code) 
         client->disconnect();
         return;
     }
-    VALIDATE(validator.validate_uint8());
+    if (client->check_invalid(validator.validate_uint8())) return;
     switch (reader.read<uint8_t>()) {
-    case Serverbound::kVerify:
-        client->disconnect();
-        return;
-    case Serverbound::kClientInput: {
-        if (!client->alive()) break;
-        Simulation* simulation = &client->game->simulation;
-        Entity& camera = simulation->get_ent(client->camera);
-        Entity& player = simulation->get_ent(camera.player);
-        VALIDATE(validator.validate_float());
-        VALIDATE(validator.validate_float());
-        float x = reader.read<float>();
-        float y = reader.read<float>();
-        if (x || y) client->x = x, client->y = y;
-        if (x == 0 && y == 0) player.acceleration.set(0, 0);
-        else {
-            if (std::abs(x) > 5e3 || std::abs(y) > 5e3) break;
-            Vector accel(x, y);
-            float m = accel.magnitude();
-            if (m > 200) accel.set_magnitude(PLAYER_ACCELERATION);
-            else accel.set_magnitude(m / 200 * PLAYER_ACCELERATION);
-            player.acceleration = accel;
+        case Serverbound::kVerify:
+            client->disconnect();
+            return;
+        case Serverbound::kClientInput: {
+            if (!client->alive()) break;
+            Simulation *simulation = &client->game->simulation;
+            Entity &camera = simulation->get_ent(client->camera);
+            Entity &player = simulation->get_ent(camera.player);
+            if (client->check_invalid(
+                validator.validate_float() &&
+                validator.validate_float() &&
+                validator.validate_uint8()
+            )) return;
+            float x = reader.read<float>();
+            float y = reader.read<float>();
+            if (x || y) client->x = x, client->y = y;
+            if (x == 0 && y == 0) player.acceleration.set(0,0);
+            else {
+                if (std::abs(x) > 5e3 || std::abs(y) > 5e3) break;
+                Vector accel(x,y);
+                float m = accel.magnitude();
+                if (m > 200) accel.set_magnitude(PLAYER_ACCELERATION);
+                else accel.set_magnitude(m / 200 * PLAYER_ACCELERATION);
+                player.acceleration = accel;
+            }
+            player.input = reader.read<uint8_t>();
+            break;
         }
-        VALIDATE(validator.validate_uint8());
-        player.input = reader.read<uint8_t>();
-        //store player's acceleration and input in camera (do not reset ever)
-        break;
-    }
-    case Serverbound::kClientSpawn: {
-        if (client->alive()) break;
-        //check string length
-        std::string name;
-        VALIDATE(validator.validate_string(MAX_NAME_LENGTH));
-        reader.read<std::string>(name);
-        VALIDATE(UTF8Parser::is_valid_utf8(name));
-        Simulation* simulation = &client->game->simulation;
-        Entity& camera = simulation->get_ent(client->camera);
-        Entity& player = alloc_player(simulation, camera.team);
-        player_spawn(simulation, camera, player);
-        //unnecessary: name = UTF8Parser::trunc_string(name, MAX_NAME_LENGTH);
-        player.set_name(name);
-        std::string password;
-        VALIDATE(validator.validate_string(MAX_PASSWORD_LENGTH));
-        reader.read<std::string>(password);
-        VALIDATE(UTF8Parser::is_valid_utf8(password));
-#ifdef DEV
-        client->isAdmin = true;
-#else
-        client->isAdmin = picosha2::hash256_hex_string(password) == PASSWORD;
-#endif
-        std::cout << "player_spawn " << name_or_unnamed(player.name)
-            << " <" << +player.id.hash << "," << +player.id.id << ">" << std::endl;
-        break;
-    }
-    case Serverbound::kPetalDelete: {
-        if (!client->alive()) break;
-        Simulation* simulation = &client->game->simulation;
-        Entity& camera = simulation->get_ent(client->camera);
-        Entity& player = simulation->get_ent(camera.player);
-        VALIDATE(validator.validate_uint8());
-        uint8_t pos = reader.read<uint8_t>();
-        if (pos >= MAX_SLOT_COUNT + player.loadout_count) break;
-        PetalID::T old_id = player.loadout_ids[pos];
-#ifdef DEV
-        if (old_id == PetalID::kCorruption) break;
-#endif
-        if (old_id != PetalID::kNone && old_id != PetalID::kBasic) {
-            uint8_t rarity = PETAL_DATA[old_id].rarity;
-            player.set_score(player.score + RARITY_TO_XP[rarity]);
-            //need to delete if over cap
-            if (player.deleted_petals.size() == player.deleted_petals.capacity())
-                //removes old trashed old petal
-                PetalTracker::remove_petal(simulation, player.deleted_petals[0]);
-            player.deleted_petals.push_back(old_id);
+        case Serverbound::kClientSpawn: {
+            if (client->alive()) break;
+            //check string length
+            std::string name;
+            if (client->check_invalid(validator.validate_string(MAX_NAME_LENGTH))) return;
+            reader.read<std::string>(name);
+            if (client->check_invalid(UTF8Parser::is_valid_utf8(name))) return;
+            Simulation *simulation = &client->game->simulation;
+            Entity &camera = simulation->get_ent(client->camera);
+            Entity &player = alloc_player(simulation, camera.team);
+            player_spawn(simulation, camera, player);
+            player.set_name(name);
+            std::string password;
+            if (client->check_invalid(validator.validate_string(MAX_PASSWORD_LENGTH))) return;
+            reader.read<std::string>(password);
+            if (client->check_invalid(UTF8Parser::is_valid_utf8(password))) return;
+            #ifdef DEV
+            client->isAdmin = true;
+            #else
+            client->isAdmin = picosha2::hash256_hex_string(password) == PASSWORD;
+            #endif
+            std::cout << "player_spawn " << (player.name.size() ? player.name : "Unnamed")
+                << " <" << +player.id.hash << "," << +player.id.id << ">" << std::endl;
+            break;
         }
-        player.set_loadout_ids(pos, PetalID::kNone);
-        break;
-    }
-    case Serverbound::kPetalSwap: {
-        if (!client->alive()) break;
-        Simulation* simulation = &client->game->simulation;
-        Entity& camera = simulation->get_ent(client->camera);
-        Entity& player = simulation->get_ent(camera.player);
-        VALIDATE(validator.validate_uint8());
-        uint8_t pos1 = reader.read<uint8_t>();
-        if (pos1 >= MAX_SLOT_COUNT + player.loadout_count) break;
-        VALIDATE(validator.validate_uint8());
-        uint8_t pos2 = reader.read<uint8_t>();
-#ifdef DEV
-        if (player.loadout_ids[pos1] == PetalID::kCorruption || player.loadout_ids[pos2] == PetalID::kCorruption) break;
-#endif
-        if (pos2 >= MAX_SLOT_COUNT + player.loadout_count) break;
-        PetalID::T tmp = player.loadout_ids[pos1];
-        player.set_loadout_ids(pos1, player.loadout_ids[pos2]);
-        player.set_loadout_ids(pos2, tmp);
-        break;
-    }
-    case Serverbound::kChatSend: {
-        if (!client->alive()) break;
-        Simulation* simulation = &client->game->simulation;
-        Entity& camera = simulation->get_ent(client->camera);
-        Entity& player = simulation->get_ent(camera.player);
-        if (player.chat_sent != NULL_ENTITY) break;
-        std::string text;
-        VALIDATE(validator.validate_string(MAX_CHAT_LENGTH));
-        reader.read<std::string>(text);
-        VALIDATE(UTF8Parser::is_valid_utf8(text));
-        text = UTF8Parser::trunc_string(text, MAX_CHAT_LENGTH);
-        if (text.size() == 0) break;
-        player.chat_sent = alloc_chat(simulation, text, player).id;
-        std::cout << "chat " << name_or_unnamed(player.name) << ": " << text << std::endl;
-        //commands
-        if (text[0] == '/') command(client, text.substr(1));
-        break;
-    }
+        case Serverbound::kPetalDelete: {
+            if (!client->alive()) break;
+            Simulation *simulation = &client->game->simulation;
+            Entity &camera = simulation->get_ent(client->camera);
+            Entity &player = simulation->get_ent(camera.player);
+            if (client->check_invalid(validator.validate_uint8())) return;
+            uint8_t pos = reader.read<uint8_t>();
+            if (pos >= MAX_SLOT_COUNT + player.loadout_count) break;
+            PetalID::T old_id = player.loadout_ids[pos];
+            #ifdef DEV
+            if (old_id == PetalID::kCorruption) break;
+            #endif
+            if (old_id != PetalID::kNone && old_id != PetalID::kBasic) {
+                uint8_t rarity = PETAL_DATA[old_id].rarity;
+                player.set_score(player.score + RARITY_TO_XP[rarity]);
+                //need to delete if over cap
+                if (player.deleted_petals.size() == player.deleted_petals.capacity())
+                    //removes old trashed old petal
+                    PetalTracker::remove_petal(simulation, player.deleted_petals[0]);
+                player.deleted_petals.push_back(old_id);
+            }
+            player.set_loadout_ids(pos, PetalID::kNone);
+            break;
+        }
+        case Serverbound::kPetalSwap: {
+            if (!client->alive()) break;
+            Simulation *simulation = &client->game->simulation;
+            Entity &camera = simulation->get_ent(client->camera);
+            Entity &player = simulation->get_ent(camera.player);
+            if (client->check_invalid(validator.validate_uint8() && validator.validate_uint8())) return;
+            uint8_t pos1 = reader.read<uint8_t>();
+            if (pos1 >= MAX_SLOT_COUNT + player.loadout_count) break;
+            uint8_t pos2 = reader.read<uint8_t>();
+            if (pos2 >= MAX_SLOT_COUNT + player.loadout_count) break;
+            #ifdef DEV
+            if (player.loadout_ids[pos1] == PetalID::kCorruption || player.loadout_ids[pos2] == PetalID::kCorruption) break;
+            #endif
+            PetalID::T tmp = player.loadout_ids[pos1];
+            player.set_loadout_ids(pos1, player.loadout_ids[pos2]);
+            player.set_loadout_ids(pos2, tmp);
+            break;
+        }
+        case Serverbound::kChatSend: {
+            if (!client->alive()) break;
+            Simulation *simulation = &client->game->simulation;
+            Entity &camera = simulation->get_ent(client->camera);
+            Entity &player = simulation->get_ent(camera.player);
+            if (player.chat_sent != NULL_ENTITY) break;
+            std::string text;
+            if (client->check_invalid(validator.validate_string(MAX_CHAT_LENGTH))) return;
+            reader.read<std::string>(text);
+            if (client->check_invalid(UTF8Parser::is_valid_utf8(text))) return;
+            text = UTF8Parser::trunc_string(text, MAX_CHAT_LENGTH);
+            if (text.size() == 0) break;
+            player.chat_sent = alloc_chat(simulation, text, player).id;
+            std::cout << "chat " << (player.name.size() ? player.name : "Unnamed") << ": " << text << std::endl;
+            //commands
+            if (text[0] == '/') client->command(text.substr(1));
+            break;
+        }
     }
 }
 
-void Client::command(Client* client, std::string const& text) {
-    Simulation* simulation = &client->game->simulation;
-    Entity& camera = simulation->get_ent(client->camera);
+void Client::command(std::string const& text) {
+    Simulation* simulation = &this->game->simulation;
+    Entity& camera = simulation->get_ent(this->camera);
     Entity& player = simulation->get_ent(camera.player);
-    float x = player.x + (client->x / camera.fov) * 1.03;
-    float y = player.y + (client->y / camera.fov) * 1.03;
+    float x = player.x + (this->x / camera.fov) * 1.03;
+    float y = player.y + (this->y / camera.fov) * 1.03;
 
     std::istringstream iss(text);
     std::string command, arg;
@@ -210,11 +204,11 @@ void Client::command(Client* client, std::string const& text) {
     std::transform(command.begin(), command.end(), command.begin(), ::tolower);
 
     if (command == "kill") {
-        simulation->get_ent(player.parent).set_killed_by(name_or_unnamed(player.name));
+        simulation->get_ent(player.parent).set_killed_by(player.name.size() ? player.name : "Unnamed");
         simulation->request_delete(player.id);
     }
 
-    if (!client->isAdmin) return;
+    if (!this->isAdmin) return;
 
     if (command == "drop" || command == "give") {
         PetalID::T id;
@@ -322,15 +316,15 @@ void Client::command(Client* client, std::string const& text) {
             // set ghost_mode via setter so change syncs to clients
             player_ent.set_ghost_mode(0);
             // restore collisions and immunity directly
-            BIT_UNSET(player_ent.flags, EntityFlags::kNoFriendlyCollision);
+            BitMath::unset(player_ent.flags, EntityFlags::kNoFriendlyCollision);
             player_ent.immunity_ticks = 0;
         }
         else {
             player_ent.set_ghost_mode(1);
-            BIT_SET(player_ent.flags, EntityFlags::kNoFriendlyCollision);
+            BitMath::set(player_ent.flags, EntityFlags::kNoFriendlyCollision);
             player_ent.immunity_ticks = std::numeric_limits<decltype(player_ent.immunity_ticks)>::max();
         }
-        std::cout << "ghost mode toggled for " << name_or_unnamed(player_ent.name) << " -> " << +player_ent.ghost_mode << std::endl;
+        std::cout << "ghost mode toggled for " << (player_ent.name.size() ? player_ent.name : "Unnamed") << " -> " << +player_ent.ghost_mode << std::endl;
     }
     else if (command == "killallmobs") {
         for (uint16_t i = 0; i < ENTITY_CAP; ++i) {
@@ -349,15 +343,20 @@ void Client::command(Client* client, std::string const& text) {
             Server::game.broadcast_message(text);  // ���÷������㲥����
         }
     }
-
-
 }
 
-void Client::on_disconnect(WebSocket* ws, int code, std::string_view message) {
-    std::cout << "client disconnection\n";
-    Client* client = ws->getUserData();
+void Client::on_disconnect(WebSocket *ws, int code, std::string_view message) {
+    std::printf("disconnect: [%d]\n", code);
+    Client *client = ws->getUserData();
     if (client == nullptr) return;
     client->remove();
-    //Server::clients.erase(client);
-    //delete player in systems
+}
+
+bool Client::check_invalid(bool valid) {
+    if (valid) return false;
+    std::cout << "client sent an invalid packet\n";
+    //optional
+    disconnect();
+
+    return true;
 }

@@ -1,5 +1,6 @@
 #include <Client/Game.hh>
 
+#include <Client/Input.hh>
 #include <Client/Ui/Ui.hh>
 
 #include <Shared/Binary.hh>
@@ -20,15 +21,26 @@ void Game::on_message(uint8_t* ptr, uint32_t len) {
             Entity& ent = simulation.get_ent(curr_id);
             simulation._delete_ent(curr_id);
             curr_id = reader.read<EntityID>();
+            while(!(curr_id == NULL_ENTITY)) {
+                uint8_t create = reader.read<uint8_t>();
+                if (BitMath::at(create, 0)) simulation.force_alloc_ent(curr_id);
+                assert(simulation.ent_exists(curr_id));
+                Entity &ent = simulation.get_ent(curr_id);
+                ent.read(&reader, BitMath::at(create, 0));
+                if (BitMath::at(create, 1)) ent.pending_delete = 1;
+                curr_id = reader.read<EntityID>();
+            }
+            simulation.arena_info.read(&reader, reader.read<uint8_t>());
+            break;
         }
         curr_id = reader.read<EntityID>();
         while (!(curr_id == NULL_ENTITY)) {
             uint8_t create = reader.read<uint8_t>();
-            if (BIT_AT(create, 0)) simulation.force_alloc_ent(curr_id);
+            if (BitMath::at(create, 0)) simulation.force_alloc_ent(curr_id);
             assert(simulation.ent_exists(curr_id));
             Entity& ent = simulation.get_ent(curr_id);
-            ent.read(&reader, BIT_AT(create, 0));
-            if (BIT_AT(create, 1)) ent.pending_delete = 1;
+            ent.read(&reader, BitMath::at(create, 0));
+            if (BitMath::at(create, 1)) ent.pending_delete = 1;
             curr_id = reader.read<EntityID>();
         }
         simulation.arena_info.read(&reader, reader.read<uint8_t>());
@@ -54,20 +66,9 @@ void Game::send_inputs() {
         writer.write<float>(0);
         writer.write<uint8_t>(0);
     } else {
-        float x, y;
-        if (Input::keyboard_movement) {
-            x = 300 * (Input::keys_held.contains('D') - Input::keys_held.contains('A') + Input::keys_held.contains(39) - Input::keys_held.contains(37));
-            y = 300 * (Input::keys_held.contains('S') - Input::keys_held.contains('W') + Input::keys_held.contains(40) - Input::keys_held.contains(38));
-            if (Game::show_chat) x = y = 0;
-        } else {
-            x = (Input::mouse_x - renderer.width / 2) / Ui::scale;
-            y = (Input::mouse_y - renderer.height / 2) / Ui::scale;
-        }
-        writer.write<float>(x);
-        writer.write<float>(y);
-        uint8_t attack = (!Game::show_chat && Input::keys_held.contains('\x20')) || BIT_AT(Input::mouse_buttons_state, Input::LeftMouse);
-        uint8_t defend = (!Game::show_chat && Input::keys_held.contains('\x10')) || BIT_AT(Input::mouse_buttons_state, Input::RightMouse);
-        writer.write<uint8_t>((attack << InputFlags::kAttacking) | (defend << InputFlags::kDefending));
+        writer.write<float>(Input::game_inputs.x);
+        writer.write<float>(Input::game_inputs.y);
+        writer.write<uint8_t>(Input::game_inputs.flags);
     }
     socket.send(writer.packet, writer.at - writer.packet);
 }

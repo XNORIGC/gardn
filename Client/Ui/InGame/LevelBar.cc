@@ -4,7 +4,7 @@
 #include <Client/Ui/Extern.hh>
 #include <Shared/StaticData.hh>
 
-#include <cstdio>
+#include <format>
 #include <string>
 
 using namespace Ui;
@@ -40,18 +40,9 @@ void LevelBar::on_render(Renderer &ctx) {
     ctx.move_to(-width / 2, 0);
     ctx.line_to(-width / 2 + width * ((float) progress), 0);
     ctx.stroke();
-    char text[64];
-    if (Game::alive()) {
-        Entity &player = Game::simulation.get_ent(Game::player_id);
-        if (player.has_component(kFlower) && player.ghost_mode) {
-            std::snprintf(text, 63, "Lvl %d Flower (ghost mode)", level);
-        } else {
-            std::snprintf(text, 63, "Lvl %d Flower", level);
-        }
-    } else {
-        std::snprintf(text, 63, "Lvl %d Flower", level);
-    }
-    ctx.draw_text(text, { .size = 16 });
+
+    std::string text = "Lvl " + std::to_string(level) + " Flower";
+    ctx.draw_text(text.c_str(), { .size = 16 });
     ctx.translate(0, -height/2 - 16);
     ctx.draw_text(Game::nickname.c_str(), { .size = 24 });
 }
