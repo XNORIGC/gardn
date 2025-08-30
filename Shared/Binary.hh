@@ -9,7 +9,8 @@
 enum Clientbound {
     kDisconnect,
     kClientUpdate,
-    kOutdated
+    kOutdated,
+    kBroadcast
 };
 
 enum Serverbound {

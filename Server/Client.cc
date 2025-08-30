@@ -341,7 +341,16 @@ void Client::command(Client* client, std::string const& text) {
                 ent.health = 0;
             }
         }
-    }   
+    }
+    else  if (command == "broadcast") {
+        std::string text;
+        std::getline(iss, text);  // ����������ȡʣ�������ı�
+        if (!text.empty()) {
+            Server::game.broadcast_message(text);  // ���÷������㲥����
+        }
+    }
+
+
 }
 
 void Client::on_disconnect(WebSocket* ws, int code, std::string_view message) {

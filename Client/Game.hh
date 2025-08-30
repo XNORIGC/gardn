@@ -44,6 +44,12 @@ namespace Game {
 
     extern uint8_t show_chat;
     extern std::string chat_text;
+    struct BroadcastMessage {
+        std::string text;
+    };
+
+    // ¹ã²¥ÏûÏ¢ÈÝÆ÷
+    extern std::vector<BroadcastMessage> broadcasts;
 
     void init();
     void reset();

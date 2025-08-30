@@ -9,6 +9,7 @@
 #include <Shared/Entity.hh>
 #include <Shared/Map.hh>
 
+
 static void _update_client(Simulation *sim, Client *client) {
     if (client == nullptr) return;
     if (!client->verified) return;
@@ -79,7 +80,8 @@ void GameInstance::tick() {
     simulation.tick();
     for (Client *client : clients)
         _update_client(&simulation, client);
-    simulation.post_tick();
+   simulation.post_tick();
+ 
 }
 
 void GameInstance::add_client(Client *client) {
@@ -109,6 +111,7 @@ void GameInstance::add_client(Client *client) {
         ent.set_inventory(loadout_slots_at_level(ent.respawn_level) - 1, PetalID::kCorruption);
         for (uint32_t i = 0; i < loadout_slots_at_level(ent.respawn_level) - 1; ++i)
             ent.set_inventory(i, PetalID::kStinger);
+       
     }
     else {
         for (uint32_t i = 0; i < loadout_slots_at_level(ent.respawn_level); ++i)
@@ -147,4 +150,16 @@ void GameInstance::remove_client(Client *client) {
         simulation.request_delete(client->camera);
     }
     client->game = nullptr;
+}
+
+void GameInstance::broadcast_message(std::string const& msg) {
+    for (Client* client : clients) {
+        if (!client || !client->alive()) continue;
+
+        Writer writer(Server::OUTGOING_PACKET);
+        writer.write<uint8_t>(Clientbound::kBroadcast); // 新增的枚举类型
+        writer.write<std::string>(msg);
+
+        client->send_packet(writer.packet, writer.at - writer.packet);
+    }
 }

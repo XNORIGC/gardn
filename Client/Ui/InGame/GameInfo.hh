@@ -32,8 +32,15 @@ namespace Ui {
         virtual void on_render(Renderer &) override;
     };
 
+    class BroadcastDisplay final : public Element {
+    public:
+        BroadcastDisplay();
+        virtual void on_render(Renderer&) override;
+    };
+
     Element *make_leaderboard();
     Element *make_level_bar();
     Element *make_minimap();
     Element *make_overlevel_indicator();
+    Element *make_broadcast_display();
 }

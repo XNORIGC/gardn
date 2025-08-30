@@ -41,6 +41,7 @@ set(SRCS
     Ui/InGame/Map.cc
     Ui/InGame/OverlevelTimer.cc
     Ui/InGame/Tooltip.cc
+    Ui/InGame/BroadcastDisplay.cc
     Ui/TitleScreen/Changelog.cc
     Ui/TitleScreen/DeathScreen.cc
     Ui/TitleScreen/MainScreen.cc

@@ -49,6 +49,7 @@ namespace Game {
 
     uint8_t show_chat = 0;
     std::string chat_text;
+    std::vector<BroadcastMessage> broadcasts;
 }
 
 using namespace Game;
@@ -131,6 +132,9 @@ void Game::init() {
             new Ui::StaticText(20, "the gardn project")
             #endif
         }, 20, 0, { .h_justify = Ui::Style::Left, .v_justify = Ui::Style::Top })
+    );
+    game_ui_window.add_child(
+        Ui::make_broadcast_display()
     );
     Ui::make_petal_tooltips();
     other_ui_window.add_child(

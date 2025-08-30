@@ -7,34 +7,42 @@
 
 using namespace Game;
 
-void Game::on_message(uint8_t *ptr, uint32_t len) {
+void Game::on_message(uint8_t* ptr, uint32_t len) {
     Reader reader(ptr);
-    switch(reader.read<uint8_t>()) {
-        case Clientbound::kClientUpdate: {
-            simulation_ready = 1;
-            camera_id = reader.read<EntityID>();
-            EntityID curr_id = reader.read<EntityID>();
-            while(!(curr_id == NULL_ENTITY)) {
-                assert(simulation.ent_exists(curr_id));
-                Entity &ent = simulation.get_ent(curr_id);
-                simulation._delete_ent(curr_id);
-                curr_id = reader.read<EntityID>();
-            }
+    uint8_t packet_type = reader.read<uint8_t>();
+    switch (packet_type) {
+    case Clientbound::kClientUpdate: {
+        simulation_ready = 1;
+        camera_id = reader.read<EntityID>();
+        EntityID curr_id = reader.read<EntityID>();
+        while (!(curr_id == NULL_ENTITY)) {
+            assert(simulation.ent_exists(curr_id));
+            Entity& ent = simulation.get_ent(curr_id);
+            simulation._delete_ent(curr_id);
             curr_id = reader.read<EntityID>();
-            while(!(curr_id == NULL_ENTITY)) {
-                uint8_t create = reader.read<uint8_t>();
-                if (BIT_AT(create, 0)) simulation.force_alloc_ent(curr_id);
-                assert(simulation.ent_exists(curr_id));
-                Entity &ent = simulation.get_ent(curr_id);
-                ent.read(&reader, BIT_AT(create, 0));
-                if (BIT_AT(create, 1)) ent.pending_delete = 1;
-                curr_id = reader.read<EntityID>();
-            }
-            simulation.arena_info.read(&reader, reader.read<uint8_t>());
-            break;
         }
-        default:
-            break;
+        curr_id = reader.read<EntityID>();
+        while (!(curr_id == NULL_ENTITY)) {
+            uint8_t create = reader.read<uint8_t>();
+            if (BIT_AT(create, 0)) simulation.force_alloc_ent(curr_id);
+            assert(simulation.ent_exists(curr_id));
+            Entity& ent = simulation.get_ent(curr_id);
+            ent.read(&reader, BIT_AT(create, 0));
+            if (BIT_AT(create, 1)) ent.pending_delete = 1;
+            curr_id = reader.read<EntityID>();
+        }
+        simulation.arena_info.read(&reader, reader.read<uint8_t>());
+        break;
+    }
+    case Clientbound::kBroadcast: {
+        std::string text;
+        reader.read<std::string>(text);
+        Game::broadcasts.push_back({ text });
+        break;
+    }
+
+    default:
+        break;
     }
 }
 
