@@ -2119,7 +2119,7 @@ void draw_loadout_background(Renderer &ctx, uint8_t id, float reload) {
     #ifdef DEV
     {
         RenderContext r(&ctx);
-        ctx.translate(-30, -25);
+        ctx.translate(-30, -30);
         ctx.draw_text(std::to_string(id).c_str(), { .size = 18 }); 
     }
     #endif
