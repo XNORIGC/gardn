@@ -102,22 +102,6 @@ static uint32_t _get_petal_rotation_count(Simulation* sim, Entity& player) {
 
 void tick_player_behavior(Simulation* sim, Entity& player) {
     if (player.pending_delete) return;
-    if (player.color == ColorID::kRed && player.has_component(kFlower)) {
-        bool dummy_exists = false;
-        for (uint16_t i = 0; i < ENTITY_CAP; ++i) {
-            EntityID id(i, 0);
-            if (!sim->ent_exists(id)) continue;
-            Entity& ent = sim->get_ent(id);
-            if (ent.mob_id == MobID::kTargetDummy) {
-                dummy_exists = true;
-                break;
-            }
-        }
-
-        if (!dummy_exists) {
-            inflict_damage(sim, NULL_ENTITY, player.id, player.health, DamageType::kContact);
-        }
-    }
     DEBUG_ONLY(assert(player.max_health > 0);)
         PlayerBuffs const buffs = _get_petal_passive_buffs(sim, player);
     float health_ratio = player.health / player.max_health;

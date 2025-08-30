@@ -154,7 +154,6 @@ void GameInstance::remove_client(Client *client) {
 
 void GameInstance::broadcast_message(std::string const& msg) {
     for (Client* client : clients) {
-        if (!client || !client->alive()) continue;
 
         Writer writer(Server::OUTGOING_PACKET);
         writer.write<uint8_t>(Clientbound::kBroadcast); // 新增的枚举类型

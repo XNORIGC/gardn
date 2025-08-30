@@ -19,4 +19,5 @@ public:
     void add_client(Client *);
     void remove_client(Client *);
     void broadcast_message(const std::string& msg);
+
 };

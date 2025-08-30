@@ -29,6 +29,7 @@ set(SOURCES
     Simulation.cc
     Spawn.cc
     TeamManager.cc
+    AsymmetricBattle.cc
     ../Shared/Arena.cc
     ../Shared/Binary.cc
     ../Shared/Config.cc
