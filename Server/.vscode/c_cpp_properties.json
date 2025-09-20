@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/home/pc/gardn"
+            ],
+            "defines": [
+                "SERVERSIDE=1",
+                "DEBUG=1",
+                "WASM_SERVER=1",
+                "TDM=1",
+                "GENERAL_SPATIAL_HASH=1",
+                "USE_CODEPOINT_LEN=1"
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu23",
+            "cppStandard": "gnu++26",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "gardn",
+			"path": "."
+		},
+		{
+			"name": "Client",
+			"path": "Client"
+		},
+		{
+			"name": "Server",
+			"path": "Server"
+		}
+	],
+	"settings": {}
+}
