@@ -160,7 +160,7 @@ Entity &alloc_petal(Simulation *sim, PetalID::T petal_id, Entity const &parent) 
     petal.set_health_ratio(1);
     petal.poison_damage = petal_data.attributes.poison_damage;
     if (petal_id == PetalID::kPincer) petal.slow_inflict = TPS * 1.5;
-    if (petal_id == PetalID::kBone) petal.armor = 4;
+    if (petal_id == PetalID::kBone) petal.armor = 10;
 
     if (parent.id == NULL_ENTITY) petal.base_entity = petal.id;
     else petal.base_entity = parent.id;
@@ -185,10 +185,62 @@ Entity &alloc_web(Simulation *sim, float radius, Entity const &parent) {
     return web;
 }
 
+Entity &alloc_chat(Simulation *sim, std::string &text, Entity const &parent) {
+    Entity &chat = sim->alloc_ent();
+    chat.add_component(kPhysics);
+    chat.set_radius(18 / 2 * text.size());
+    chat.add_component(kRelations);
+    chat.set_parent(parent.id);
+    chat.set_color(parent.get_color());
+    chat.add_component(kChat);
+    chat.set_text(text);
+    entity_set_despawn_tick(chat, 10 * TPS);
+    return chat;
+}
+
+Entity &alloc_dot(Simulation *sim, Entity const &parent) {
+    Entity &dot = sim->alloc_ent();
+    dot.add_component(kPhysics);
+    dot.add_component(kRelations);
+    dot.set_parent(parent.id);
+    dot.set_team(parent.get_team());
+    dot.set_color(parent.get_color());
+    dot.add_component(kDot);
+    return dot;
+}
+
+Entity &alloc_camera(Simulation *sim, TeamManager &team_manager) {
+    Entity &ent = sim->alloc_ent();
+    ent.add_component(kCamera);
+    ent.add_component(kRelations);
+    #ifdef GAMEMODE_TDM
+    EntityID team = team_manager.get_random_team();
+    ent.set_team(team);
+    ent.set_color(sim->get_ent(team).get_color());
+    ++sim->get_ent(team).player_count;
+    #else
+    ent.set_team(ent.id);
+    ent.set_color(ColorID::kYellow); 
+    #endif
+    
+    ent.set_fov(BASE_FOV);
+    ent.set_respawn_level(1);
+    for (uint32_t i = 0; i < loadout_slots_at_level(ent.get_respawn_level()); ++i)
+        ent.set_inventory(i, PetalID::kBasic);
+    if (frand() < 0.001 && PetalTracker::get_count(sim, PetalID::kUniqueBasic) == 0)
+        ent.set_inventory(0, PetalID::kUniqueBasic);
+    for (uint32_t i = 0; i < loadout_slots_at_level(ent.get_respawn_level()); ++i)
+        PetalTracker::add_petal(sim, ent.get_inventory(i));
+    return ent;
+}
+
 void player_spawn(Simulation *sim, Entity &camera, Entity &player) {
     camera.set_player(player.id);
     player.set_parent(camera.id);
     player.set_color(camera.get_color());
+    #ifdef GAMEMODE_TDM
+    alloc_dot(sim, player);
+    #endif
     uint32_t power = Map::difficulty_at_level(camera.get_respawn_level());
     ZoneDefinition const &zone = MAP_DATA[Map::get_suitable_difficulty_zone(power)];
     float spawn_x = lerp(zone.left, zone.right, frand());

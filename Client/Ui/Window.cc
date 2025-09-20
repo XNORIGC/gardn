@@ -2,6 +2,7 @@
 
 #include <Client/Ui/Extern.hh>
 
+#include <Client/DOM.hh>
 #include <Client/Game.hh>
 #include <Client/Input.hh>
 
@@ -46,6 +47,9 @@ void Window::poll_events(ScreenEvent const &event) {
 }
 
 void Window::on_event(uint8_t event) {
-    if (event == Ui::kMouseDown)
+    if (event == Ui::kMouseDown) {
         Ui::panel_open = Ui::Panel::kNone;
+        Game::show_chat = false;
+        DOM::blur();
+    }
 }

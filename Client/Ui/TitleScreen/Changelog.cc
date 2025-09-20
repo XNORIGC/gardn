@@ -32,11 +32,46 @@ static Element *make_entries(std::initializer_list<std::string const> contents) 
 
 static Element *make_changelog_contents() {
     Element *elt = new Ui::VContainer({
+        make_date("September 14th 2025"),
+        make_entries({
+            "Added more mobile buttons",
+            "Fixed nickname input on mobile"
+        }),
+        make_divider(),
+        make_date("September 11th 2025"),
+        make_entries({
+            "Players can now rejoin the game for up to 1 minute after leaving"
+        }),
+        make_divider(),
+        make_date("September 3rd 2025"),
+        make_entries({
+            "Buffed Bone",
+            "Teammates are now displayed on the minimap"
+        }),
+        make_divider(),
         make_date("August 30th 2025"),
         make_entries({
             "Added mobile touch controls",
+            "Enabled collision between friendly entities",
             "Neutral mobs will now aggro the leader if above level 60",
             "More bugfixes"
+        }),
+        make_divider(),
+        make_date("August 25th 2025"),
+        make_entries({
+            "Buffed Peas",
+            "Reworked Yggdrasil",
+            "Rose and Dahlia can now heal teammates (including Diggers!)"
+        }),
+        make_divider(),
+        make_date("August 20th 2025"),
+        make_entries({
+            "Added chat"
+        }),
+        make_divider(),
+        make_date("August 14th 2025"),
+        make_entries({
+            "Added ability to manually restore score and petals for players who leave the game without dying"
         }),
         make_divider(),
         make_date("August 10th 2025"),
@@ -44,6 +79,11 @@ static Element *make_changelog_contents() {
             "Added TDM",
             "Made some faster mobs slower",
             "Various bugfixes"
+        }),
+        make_divider(),
+        make_date("August 4th 2025"),
+        make_entries({
+            "Increased max slot number to 12"
         }),
         make_divider(),
         make_date("July 31st 2025"),

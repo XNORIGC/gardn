@@ -17,9 +17,9 @@ constexpr std::array<uint32_t, RarityID::kNumRarities> RARITY_TO_XP = { 2, 10, 5
 
 Client::Client() : game(nullptr) {}
 
-void Client::init() {
+void Client::init(uint64_t recovery_id) {
     DEBUG_ONLY(assert(game == nullptr);)
-    Server::game.add_client(this);    
+    Server::game.add_client(this, recovery_id);
 }
 
 void Client::remove() {
@@ -51,7 +51,11 @@ void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) 
         return;
     }
     if (!client->verified) {
-        if (client->check_invalid(validator.validate_uint8() && validator.validate_uint64())) return;
+        if (client->check_invalid(
+            validator.validate_uint8() &&
+            validator.validate_uint64() &&
+            validator.validate_uint64()
+        )) return;
         if (reader.read<uint8_t>() != Serverbound::kVerify) {
             client->disconnect();
             return;
@@ -61,11 +65,11 @@ void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) 
             return;
         }
         client->verified = 1;
-        client->init();
+        client->init(reader.read<uint64_t>());
         return;
     }
     if (client->game == nullptr) {
-        client->disconnect();
+        client->disconnect(CloseReason::kServer, "Server Error");
         return;
     }
     if (client->check_invalid(validator.validate_uint8())) return;
@@ -100,15 +104,23 @@ void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) 
         case Serverbound::kClientSpawn: {
             if (client->alive()) break;
             //check string length
-            std::string name;
+            std::string name, pwd;
             if (client->check_invalid(validator.validate_string(MAX_NAME_LENGTH))) return;
+            if (client->check_invalid(validator.validate_string(MAX_DEV_PWD_LENGTH))) return;
             reader.read<std::string>(name);
+            reader.read<std::string>(pwd);
             if (client->check_invalid(UTF8Parser::is_valid_utf8(name))) return;
+            if (client->check_invalid(UTF8Parser::is_valid_utf8(pwd))) return;
             Simulation *simulation = &client->game->simulation;
             Entity &camera = simulation->get_ent(client->camera);
             Entity &player = alloc_player(simulation, camera.get_team());
             player_spawn(simulation, camera, player);
             player.set_name(name);
+            uint8_t dev = pwd == "ez hax"; // feel free to use
+            camera.set_dev(dev);
+            player.set_dev(dev);
+            std::cout << "player_spawn" << (dev ? "_dev " : " ") << name_or_unnamed(name)
+                << " <" << +player.id.hash << "," << +player.id.id << ">" << std::endl;
             break;
         }
         case Serverbound::kPetalDelete: {
@@ -145,6 +157,22 @@ void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) 
             PetalID::T tmp = player.get_loadout_ids(pos1);
             player.set_loadout_ids(pos1, player.get_loadout_ids(pos2));
             player.set_loadout_ids(pos2, tmp);
+            break;
+        }
+        case Serverbound::kChatSend: {
+            if (!client->alive()) break;
+            std::string text;
+            if (client->check_invalid(validator.validate_string(MAX_CHAT_LENGTH))) return;
+            reader.read<std::string>(text);
+            if (client->check_invalid(UTF8Parser::is_valid_utf8(text))) return;
+            // text = UTF8Parser::trunc_string(text, MAX_CHAT_LENGTH);
+            if (text.size() == 0) break;
+            Simulation *simulation = &client->game->simulation;
+            Entity &camera = simulation->get_ent(client->camera);
+            Entity &player = simulation->get_ent(camera.get_player());
+            if (player.chat_sent != NULL_ENTITY) break;
+            player.chat_sent = alloc_chat(simulation, text, player).id;
+            std::cout << "chat " << name_or_unnamed(player.get_name()) << ": " << text << std::endl;
             break;
         }
     }

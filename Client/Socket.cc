@@ -1,4 +1,5 @@
 #include <Client/Socket.hh>
+#include <Client/DOM.hh>
 #include <Client/Game.hh>
 
 #include <Shared/Binary.hh>
@@ -19,6 +20,7 @@ extern "C" {
             Writer w(INCOMING_PACKET);
             w.write<uint8_t>(Serverbound::kVerify);
             w.write<uint64_t>(VERSION_HASH);
+            w.write<uint64_t>(Game::recovery_id);
             Game::reset();
             Game::socket.ready = 1; //force send
             Game::socket.send(w.packet, w.at - w.packet);
@@ -33,6 +35,8 @@ extern "C" {
             else
                 Game::disconnect_message = std::format("Disconnected with code {}", len);
             free(reason);
+            if (len == CloseReason::kOutdated)
+                DOM::reload_page();
         }
         else if (type == 1) {
             Game::socket.ready = 1;

@@ -13,6 +13,7 @@ extern float const PLAYER_ACCELERATION;
 extern float const DEFAULT_FRICTION;
 extern float const SUMMON_RETREAT_RADIUS;
 extern float const DIGGER_SPAWN_CHANCE;
+extern float const TEAMMATE_HEAL_RADIUS;
 
 extern float const BASE_FLOWER_RADIUS;
 extern float const BASE_PETAL_ROTATION_SPEED;
@@ -139,3 +140,5 @@ extern uint32_t level_to_score(uint32_t);
 extern uint32_t loadout_slots_at_level(uint32_t);
 
 extern float hp_at_level(uint32_t);
+
+std::string name_or_unnamed(std::string const &);

@@ -16,13 +16,15 @@ enum Serverbound {
     kClientInput,
     kClientSpawn,
     kPetalSwap,
-    kPetalDelete
+    kPetalDelete,
+    kChatSend
 };
 
 enum CloseReason {
     kServer = 4001,
     kProtocol = 4002,
-    kOutdated = 4003
+    kOutdated = 4003,
+    kRecovered = 4004
 };
 
 class Writer {
@@ -68,16 +70,15 @@ public:
             uint32_t len = r.read<uint32_t>();
             std::vector<T> ret(len);
             for (uint32_t i = 0; i < len; ++i)
-                ret.push_back(r.read<T>());
+                r.read<T>(ret[i]);
             return ret;
         }
 
         static void read(Reader &r, std::vector<T> &v) {
             uint32_t len = r.read<uint32_t>();
-            v.clear();
-            v.reserve(len);
+            v.resize(len);
             for (uint32_t i = 0; i < len; ++i)
-                v.push_back(r.read<T>());
+                r.read<T>(v[i]);
         }
     };
 

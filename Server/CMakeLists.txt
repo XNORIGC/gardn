@@ -12,6 +12,7 @@ set(SOURCES
     EntityFunctions/Misc.cc
     Process/Ai.cc
     Process/Camera.cc
+    Process/Chat.cc
     Process/Collision.cc
     Process/Culling.cc
     Process/Curse.cc
@@ -60,16 +61,20 @@ endif()
 if (USE_CODEPOINT_LEN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_CODEPOINT_LEN=1")
 endif()
+if (BUILD_TIME)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_TIME=${BUILD_TIME}ull")
+endif()
 if(DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4 -DDEBUG=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DDEBUG=1")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -flto=auto")
 endif()
 
 if(WASM_SERVER)
     set(CMAKE_CXX_COMPILER "em++")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWASM_SERVER=1")
-    add_link_options(-sEXIT_RUNTIME=0 -sEXPORTED_FUNCTIONS=_main,_on_connect,_on_disconnect,_tick,_on_message)
+    add_link_options(-sEXPORTED_RUNTIME_METHODS=HEAPU8)
+    add_link_options(-sEXPORTED_FUNCTIONS=_main,_on_connect,_on_disconnect,_tick,_on_message,_malloc,_free,_restore_player)
     if (NOT DEBUG) 
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --closure=1")
     endif()
@@ -78,6 +83,9 @@ if(WASM_SERVER)
 else()
     set(CMAKE_CXX_COMPILER "g++")
     add_executable(gardn-server ${SOURCES})
+    if (NOT DEBUG) 
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+    endif()
     target_include_directories(gardn-server PRIVATE ${CMAKE_SOURCE_DIR}/uWebSockets/src)
     target_include_directories(gardn-server PRIVATE ${CMAKE_SOURCE_DIR}/uWebSockets/uSockets/src)
     target_link_directories(gardn-server PRIVATE ${CMAKE_SOURCE_DIR}/uWebSockets/uSockets)

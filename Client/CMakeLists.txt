@@ -10,6 +10,7 @@ set(SRCS
     Assets/Mob.cc
     Assets/Petal.cc
     Assets/Web.cc
+    Render/RenderChat.cc
     Render/RenderDrop.cc
     Render/RenderFlower.cc
     Render/RenderHealth.cc
@@ -31,6 +32,7 @@ set(SRCS
     Socket.cc
     StaticData.cc
     Storage.cc
+    Ui/InGame/ChatInput.cc
     Ui/InGame/InputFreeze.cc
     Ui/InGame/Leaderboard.cc
     Ui/InGame/LevelBar.cc
@@ -77,14 +79,21 @@ set(CMAKE_CXX_FLAGS "-DCLIENTSIDE=1 -std=c++20")
 if (USE_CODEPOINT_LEN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_CODEPOINT_LEN=1")
 endif()
+if (BUILD_TIME)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_TIME=${BUILD_TIME}ull")
+endif()
 if(DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG=1 -gdwarf-4 -sNO_DISABLE_EXCEPTION_CATCHING")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG=1")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math --closure=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -flto=auto --closure=1")
 endif()
 
 add_link_options(-sEXPORTED_RUNTIME_METHODS=stringToNewUTF8)
-add_link_options(-sEXPORTED_FUNCTIONS=_main,_key_event,_mouse_event,_touch_event,_wheel_event,_clipboard_event,_loop,_on_message)
+add_link_options(-sEXPORTED_FUNCTIONS=_main,_key_event,_mouse_event,_touch_event,_wheel_event,_clipboard_event,_blur_event,_loop,_on_message)
 
 add_executable(gardn-client ${SRCS})
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
+
+if (SERVER_URL)
+    target_compile_definitions(gardn-client PRIVATE SERVER_URL="${SERVER_URL}")
+endif()

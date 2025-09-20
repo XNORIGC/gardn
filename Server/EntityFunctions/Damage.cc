@@ -7,10 +7,11 @@
 #include <cmath>
 
 static bool _yggdrasil_revival_clause(Simulation *sim, Entity &player) {
+    if (BitMath::at(player.flags, EntityFlags::kZombie)) return false;
     for (uint32_t i = 0; i < player.get_loadout_count(); ++i) {
         if (!player.loadout[i].already_spawned) continue;
         if (player.loadout[i].get_petal_id() != PetalID::kYggdrasil) continue;
-        player.set_loadout_ids(i, PetalID::kNone);
+        if (frand() > 0.5) continue;
         return true;
     }
     return false;
@@ -47,55 +48,52 @@ void inflict_damage(Simulation *sim, EntityID const atk_id, EntityID const def_i
             }
         }
     }
-    /* yggdrasil revive clause
+    // yggdrasil revive clause
     if (defender.health == 0 && defender.has_component(kFlower)) {
         if (_yggdrasil_revival_clause(sim, defender)) {
-            defender.health = defender.max_health * 0.25;
+            defender.set_revived(1);
+            defender.health = defender.max_health;
+            defender.poison_ticks = 0;
+            defender.slow_ticks = 0;
+            defender.dandy_ticks = 0;
             defender.immunity_ticks = 1.0 * TPS;
         }
     }
-    */
     if (!sim->ent_exists(atk_id)) return;
     Entity &attacker = sim->get_ent(atk_id);
 
     if (type != DamageType::kReflect && defender.damage_reflection > 0)
         inflict_damage(sim, def_id, attacker.base_entity, damage_dealt * defender.damage_reflection, DamageType::kReflect);
-    
-    if (!sim->ent_alive(atk_id)) return;
 
-    if (defender.slow_ticks < attacker.slow_inflict)
-        defender.slow_ticks = attacker.slow_inflict;
-    
-    if (attacker.has_component(kPetal)) {
-        switch (attacker.get_petal_id()) {
-            case PetalID::kDandelion:
-                defender.dandy_ticks = 10 * TPS;
-                break;
-            default:
-                break;
+    if (type == DamageType::kContact && defender.get_revived() == 0) {
+        if (defender.poison_ticks < attacker.poison_damage.time * TPS) {
+            defender.poison_ticks = attacker.poison_damage.time * TPS;
+            defender.poison_inflicted = attacker.poison_damage.damage / TPS;
+            defender.poison_dealer = attacker.base_entity;
         }
+
+        if (defender.slow_ticks < attacker.slow_inflict)
+            defender.slow_ticks = attacker.slow_inflict;
+
+        if (attacker.has_component(kPetal) &&
+            attacker.get_petal_id() == PetalID::kDandelion &&
+            defender.dandy_ticks < 10 * TPS)
+            defender.dandy_ticks = 10 * TPS;
     }
 
-    if (attacker.has_component(kPetal)) {
-        if (!sim->ent_alive(defender.target))
-            defender.target = attacker.base_entity;
-        
-    } else {
-        if (!sim->ent_alive(defender.target))
+    if (!sim->ent_alive(defender.target)) {
+        if (attacker.has_component(kPetal) && sim->ent_alive(attacker.get_parent()))
+            defender.target = attacker.get_parent();
+        else if (sim->ent_alive(atk_id))
             defender.target = atk_id;
     }
     defender.last_damaged_by = attacker.base_entity;
-
-    if (type == DamageType::kContact && defender.poison_ticks < attacker.poison_damage.time * TPS) {
-        defender.poison_ticks = attacker.poison_damage.time * TPS;
-        defender.poison_inflicted = attacker.poison_damage.damage / TPS;
-        defender.poison_dealer = defender.last_damaged_by;
-    }
 }
 
 void inflict_heal(Simulation *sim, Entity &ent, float amt) {
     DEBUG_ONLY(assert(ent.has_component(kHealth));)
     if (ent.pending_delete || ent.health <= 0) return;
     if (ent.dandy_ticks > 0) return;
+    if (BitMath::at(ent.flags, EntityFlags::kZombie)) return;
     ent.health = fclamp(ent.health + amt, 0, ent.max_health);
 }

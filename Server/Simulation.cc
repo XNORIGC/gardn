@@ -40,7 +40,7 @@ void Simulation::on_tick() {
         }
     }
     for_each_entity([](Simulation *sim, Entity &ent) {
-        if (ent.has_component(kPhysics))
+        if (ent.has_component(kPhysics) && !ent.has_component(kDot))
             sim->spatial_hash.insert(ent);
         if (BitMath::at(ent.flags, EntityFlags::kHasCulling))
             BitMath::set(ent.flags, EntityFlags::kIsCulled);
@@ -56,6 +56,7 @@ void Simulation::on_tick() {
     for_each<kSegmented>(tick_segment_behavior);
     for_each<kCamera>(tick_camera_behavior);
     for_each<kScore>(tick_score_behavior);
+    for_each<kChat>(tick_chat_behavior);
     for_each_entity(entity_clear_references);
     calculate_leaderboard(this);
 }
@@ -66,6 +67,7 @@ void Simulation::post_tick() {
         //no deletions mid tick
         ent.reset_protocol();
         ++ent.lifetime;
+        ent.chat_sent = NULL_ENTITY;
         if (BitMath::at(ent.flags, EntityFlags::kIsDespawning)) {
             if (ent.despawn_tick == 0) sim->request_delete(ent.id);
             else --ent.despawn_tick;

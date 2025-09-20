@@ -1,8 +1,10 @@
 #ifdef WASM_SERVER
 #include <Server/Client.hh>
+#include <Server/PetalTracker.hh>
 #include <Server/Server.hh>
 
 #include <Shared/Config.hh>
+#include <Shared/Map.hh>
 
 #include <iostream>
 #include <string>
@@ -44,6 +46,38 @@ extern "C" {
         if (iter == WS_MAP.end()) return;
         std::string_view message(reinterpret_cast<char const *>(INCOMING_BUFFER), len);
         Client::on_message(iter->second, message, 0);
+    }
+
+    bool restore_player(EntityID::hash_type hash, EntityID::id_type id, uint32_t score, PetalID::T *loadout_ids) {
+        Simulation *sim = &Server::game.simulation;
+        if (id >= ENTITY_CAP) return false;
+        EntityID player_id = EntityID(id, hash);
+        if (!sim->ent_alive(player_id)) return false;
+        Entity &player = sim->get_ent(player_id);
+        if (!player.has_component(kFlower) || player.has_component(kMob)) return false;
+        uint32_t loadout_count = loadout_slots_at_level(score_to_level(score));
+        for (uint32_t i = 0; i < loadout_count + MAX_SLOT_COUNT; ++i)
+            if (loadout_ids[i] >= PetalID::kNumPetals) return false;
+
+        player.set_score(score);
+        player.immunity_ticks = TPS;
+        uint32_t difficulty = MAP_DATA[Map::get_zone_from_pos(player.get_x(), player.get_y())].difficulty;
+        uint32_t power = Map::difficulty_at_level(score_to_level(score));
+        if (difficulty < power) {
+            ZoneDefinition const &zone = MAP_DATA[Map::get_suitable_difficulty_zone(power)];
+            player.set_x(0.99 * zone.left + 0.01 * zone.right);
+        }
+        for (uint32_t i = 0; i < loadout_count + MAX_SLOT_COUNT; ++i) {
+            PetalTracker::remove_petal(sim, player.get_loadout_ids(i));
+            player.set_loadout_ids(i, loadout_ids[i]);
+            PetalTracker::add_petal(sim, loadout_ids[i]);
+        }
+        for (uint32_t i = 0; i < loadout_count; ++i) {
+            LoadoutSlot &slot = player.loadout[i];
+            slot.update_id(sim, loadout_ids[i]);
+            slot.force_reload();
+        }
+        return true;
     }
 }
 
@@ -108,6 +142,7 @@ WebSocketServer::WebSocketServer() {
 
 void Server::run() {
     EM_ASM({
+        globalThis.Module = Module;
         setInterval(_tick, $0);
     }, 1000 / TPS);
 }

@@ -3,6 +3,9 @@
 #include <Shared/StaticDefinitions.hh>
 
 #include <cstdint>
+#include <set>
+
+class Client;
 
 typedef uint16_t game_tick_t;
 
@@ -18,7 +21,9 @@ typedef uint16_t game_tick_t;
     COMPONENT(Segmented) \
     COMPONENT(Web) \
     COMPONENT(Score) \
-    COMPONENT(Name)
+    COMPONENT(Name) \
+    COMPONENT(Chat) \
+    COMPONENT(Dot)
 
 #define PERFIELD \
 FIELDS_Physics \
@@ -31,7 +36,9 @@ FIELDS_Mob \
 FIELDS_Drop \
 FIELDS_Segmented \
 FIELDS_Score \
-FIELDS_Name
+FIELDS_Name \
+FIELDS_Chat \
+FIELDS_Dot
 
 #define FIELDS_Physics \
 SINGLE(Physics, x, Float) \
@@ -46,12 +53,14 @@ MULTIPLE(Camera, inventory, PetalID::T, 2 * MAX_SLOT_COUNT) \
 SINGLE(Camera, killed_by, std::string) \
 SINGLE(Camera, camera_x, Float) \
 SINGLE(Camera, camera_y, Float) \
-SINGLE(Camera, fov, Float) 
+SINGLE(Camera, fov, Float) \
+SINGLE(Camera, recovery_id, uint64_t)
 
 #define FIELDS_Relations \
 SINGLE(Relations, team, EntityID) \
 SINGLE(Relations, parent, EntityID) \
-SINGLE(Relations, color, uint8_t)
+SINGLE(Relations, color, uint8_t) \
+SINGLE(Relations, dev, uint8_t)
 
 #define FIELDS_Flower \
 SINGLE(Flower, overlevel_timer, float) \
@@ -66,7 +75,8 @@ SINGLE(Petal, petal_id, PetalID::T)
 
 #define FIELDS_Health \
 SINGLE(Health, health_ratio, Float) \
-SINGLE(Health, damaged, StickyFlag)
+SINGLE(Health, damaged, StickyFlag) \
+SINGLE(Health, revived, StickyFlag)
 
 #define FIELDS_Mob \
 SINGLE(Mob, mob_id, MobID::T)
@@ -84,6 +94,11 @@ SINGLE(Score, score, uint32_t)
 #define FIELDS_Name \
 SINGLE(Name, name, std::string) \
 SINGLE(Name, nametag_visible, uint8_t)
+
+#define FIELDS_Chat \
+SINGLE(Chat, text, std::string)
+
+#define FIELDS_Dot
 
 #ifdef SERVERSIDE
 #define PER_EXTRA_FIELD \
@@ -128,7 +143,13 @@ SINGLE(Name, nametag_visible, uint8_t)
     SINGLE(deletion_tick, uint8_t, =0) \
     SINGLE(despawn_tick, game_tick_t, =0) \
     SINGLE(secondary_reload, game_tick_t, =0) \
-    SINGLE(deleted_petals, circ_arr_t, ={})
+    SINGLE(deleted_petals, circ_arr_t, ={}) \
+    SINGLE(client, Client *, =nullptr) \
+    \
+    SINGLE(chat_sent, EntityID, =NULL_ENTITY) \
+    SINGLE(chat_pos, uint8_t, =0) \
+    \
+    SINGLE(minimap_dots, std::set<EntityID>, ={})
 #else
 #define PER_EXTRA_FIELD \
     SINGLE(last_damaged_time, double, =0) \
@@ -139,7 +160,8 @@ SINGLE(Name, nametag_visible, uint8_t)
     SINGLE(eye_y, float, =0) \
     SINGLE(mouth, float, =15) \
     SINGLE(animation, float, =0) \
-    SINGLE(damage_flash, float, =0)
+    SINGLE(damage_flash, float, =0) \
+    SINGLE(revival_burst, float, =0)
 #endif
 
 class EntityID {

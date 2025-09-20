@@ -46,15 +46,39 @@ void tick_petal_behavior(Simulation *sim, Entity &petal) {
     }
     else if (petal_data.attributes.secondary_reload > 0) {
         if (petal.secondary_reload > petal_data.attributes.secondary_reload * TPS) {
-            if (petal_data.attributes.burst_heal > 0 && player.health < player.max_health && player.dandy_ticks == 0) {
-                Vector delta(player.get_x() - petal.get_x(), player.get_y() - petal.get_y());
-                if (delta.magnitude() < petal.get_radius()) {
-                    inflict_heal(sim, player, petal_data.attributes.burst_heal);
-                    sim->request_delete(petal.id);
-                    return;
+            if (petal_data.attributes.burst_heal > 0) {
+                EntityID potential = NULL_ENTITY;
+                float min_health_ratio = 1;
+                if (player.health < player.max_health &&
+                    player.dandy_ticks == 0 &&
+                    !BitMath::at(player.flags, EntityFlags::kZombie))
+                    potential = player.id;
+                else
+                    sim->spatial_hash.query(player.get_x(), player.get_y(),
+                        TEAMMATE_HEAL_RADIUS, TEAMMATE_HEAL_RADIUS, [&](Simulation *sim, Entity &ent){
+                            if (!sim->ent_alive(ent.id)) return;
+                            if (!ent.has_component(kFlower)) return;
+                            if (ent.get_team() != player.get_team()) return;
+                            if (ent.dandy_ticks > 0) return;
+                            if (BitMath::at(ent.flags, EntityFlags::kZombie)) return;
+                            float health_ratio = ent.health / ent.max_health;
+                            if (health_ratio >= min_health_ratio) return;
+                            float dist = Vector(ent.get_x() - player.get_x(), ent.get_y() - player.get_y()).magnitude();
+                            if (dist > TEAMMATE_HEAL_RADIUS) return;
+                            potential = ent.id;
+                            min_health_ratio = health_ratio;
+                        });
+                if (potential != NULL_ENTITY) {
+                    Entity &ent = sim->get_ent(potential);
+                    Vector delta(ent.get_x() - petal.get_x(), ent.get_y() - petal.get_y());
+                    if (delta.magnitude() < petal.get_radius()) {
+                        inflict_heal(sim, ent, petal_data.attributes.burst_heal);
+                        sim->request_delete(petal.id);
+                        return;
+                    }
+                    delta.set_magnitude(PLAYER_ACCELERATION * 4);
+                    petal.acceleration = delta;
                 }
-                delta.set_magnitude(PLAYER_ACCELERATION * 4);
-                petal.acceleration = delta;
             }
             switch (petal.get_petal_id()) {
                 case PetalID::kMissile:

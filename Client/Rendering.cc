@@ -29,7 +29,7 @@ void Game::render_game() {
     DEBUG_ONLY(assert(simulation.ent_exists(camera_id));)
     Entity const &camera = simulation.get_ent(camera_id);
     renderer.translate(renderer.width / 2, renderer.height / 2);
-    renderer.scale(Ui::scale * camera.get_fov());
+    renderer.scale(Game::scale * camera.get_fov());
     renderer.translate(-camera.get_camera_x(), -camera.get_camera_y());
     if (alive()) {
         Entity const &player = simulation.get_ent(player_id);
@@ -64,7 +64,7 @@ void Game::render_game() {
         }
         renderer.set_stroke(alpha);
         renderer.set_line_width(0.5);
-        float scale = 1 / (2 * camera.get_fov() * Ui::scale);
+        float scale = 1 / (2 * camera.get_fov() * Game::scale);
         float leftX = camera.get_camera_x() - renderer.width * scale;
         float rightX = camera.get_camera_x() + renderer.width * scale;
         float topY = camera.get_camera_y() - renderer.height * scale;
@@ -173,6 +173,12 @@ void Game::render_game() {
         RenderContext context(&renderer);
         renderer.translate(ent.get_x(), ent.get_y());
         render_name(renderer, ent);
+    });
+    simulation.for_each<kChat>([](Simulation *sim, Entity const &ent){
+        RenderContext context(&renderer);
+        renderer.translate(ent.get_x(), ent.get_y());
+        renderer.scale(ent.animation);
+        render_chat(renderer, ent);
     });
 }
 

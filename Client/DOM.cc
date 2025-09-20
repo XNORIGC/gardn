@@ -1,5 +1,7 @@
 #include <Client/DOM.hh>
 
+#include <Client/Input.hh>
+
 #include <Helpers/UTF8.hh>
 
 #include <emscripten.h>
@@ -18,12 +20,24 @@ void DOM::create_text_input(char const *name, uint32_t max_len) {
         elem.style.background = "transparent";
         elem.style.border = "none";
         elem.style.outline = "none";
-        elem.style["padding-left"] = "5px";
         elem.maxLength = ($1).toString();
         elem.setAttribute("spellcheck", "false");
+        elem.addEventListener("keydown", e => {
+            if (e.key === "Enter" && !e.repeat) {
+                e.stopPropagation();
+                _key_event(stringToNewUTF8(e.key), 0);
+                elem.blur();
+            }
+        });
+        elem.addEventListener("keyup", e => {
+            if (e.key === "Enter" && !e.repeat) {
+                e.stopPropagation();
+                _key_event(stringToNewUTF8(e.key), 1);
+            }
+        });
         document.body.appendChild(elem);
     },
-    name, max_len * 2);
+    name, max_len);
 }
 
 void DOM::element_show(char const *name)
@@ -56,9 +70,10 @@ void DOM::update_pos_and_dimension(char const *name, float x, float y, float w, 
             const elem = document.getElementById(name);
             elem.style.left = ($1 - $3 / 2) / devicePixelRatio + "px";
             elem.style.top = ($2 - $4 / 2) / devicePixelRatio + "px";
-            elem.style.width = ($3 / devicePixelRatio - 10) + "px";
+            elem.style.width = ($3 / devicePixelRatio - $4 / devicePixelRatio * 0.2) + "px";
             elem.style.height = $4 / devicePixelRatio + "px";
             elem.style["font-size"] = $4 / devicePixelRatio * 0.66 + "px";
+            elem.style["padding-left"] = $4 / devicePixelRatio * 0.1 + "px";
         },
         name, x, y, w, h);
 }
@@ -85,10 +100,43 @@ void DOM::update_text(char const *name, std::string const &contents, uint32_t ma
     }, name, contents.c_str(), max_length);
 }
 
+void DOM::element_focus(char const *name) {
+    EM_ASM({
+        const name = UTF8ToString($0);
+        const elem = document.getElementById(name);
+        elem.focus();
+    }, name);
+}
+
+void DOM::blur() {
+    EM_ASM({
+        if (document.activeElement)
+            document.activeElement.blur();
+    });
+}
+
 void DOM::open_page(char const *url) {
     EM_ASM({
         try {
             window.open(UTF8ToString($0));
         } catch(e) {}
     }, url);
+}
+
+void DOM::reload_page() {
+    EM_ASM({
+        window.onbeforeunload = null;
+        window.location.reload();
+    });
+}
+
+void DOM::toggle_fullscreen() {
+    EM_ASM({
+        try {
+            if (!document.fullscreenElement)
+                document.documentElement.requestFullscreen();
+            else
+                document.exitFullscreen();
+        } catch {}
+    });
 }

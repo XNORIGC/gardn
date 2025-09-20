@@ -1,3 +1,4 @@
+#include <Client/DOM.hh>
 #include <Client/Game.hh>
 
 #include <Client/Input.hh>
@@ -60,7 +61,9 @@ void Game::spawn_in() {
     if (Game::on_game_screen == 0) {
         writer.write<uint8_t>(Serverbound::kClientSpawn);
         std::string name = Game::nickname;
+        std::string pwd = Game::dev_password;
         writer.write<std::string>(name);
+        writer.write<std::string>(pwd);
         socket.send(writer.packet, writer.at - writer.packet);
     } else Game::on_game_screen = 0;
 }
@@ -86,4 +89,12 @@ void Game::swap_all_petals() {
     if (!Game::alive()) return;
     for (uint32_t i = 0; i < Game::loadout_count; ++i)
         Ui::ui_swap_petals(i, i + Game::loadout_count);
+}
+
+void Game::send_chat(std::string const &text) {
+    Writer writer(static_cast<uint8_t *>(OUTGOING_PACKET));
+    if (!Game::alive()) return;
+    writer.write<uint8_t>(Serverbound::kChatSend);
+    writer.write<std::string>(text);
+    socket.send(writer.packet, writer.at - writer.packet);
 }

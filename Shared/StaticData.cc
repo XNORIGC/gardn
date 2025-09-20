@@ -10,6 +10,7 @@ float const PLAYER_ACCELERATION = 5.0f;
 float const DEFAULT_FRICTION = 1.0f/3.0f;
 float const SUMMON_RETREAT_RADIUS = 600.0f;
 float const DIGGER_SPAWN_CHANCE = 0.25f;
+float const TEAMMATE_HEAL_RADIUS = 200.0f;
 
 float const BASE_FLOWER_RADIUS = 25.0f;
 float const BASE_PETAL_ROTATION_SPEED = 2.5f;
@@ -239,7 +240,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 5.0,
         .damage = 8.0,
         .radius = 7.0,
-        .reload = 2.0,
+        .reload = 1.0,
         .count = 4,
         .rarity = RarityID::kRare,
         .attributes = {
@@ -357,7 +358,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 5.0,
         .damage = 2.0,
         .radius = 7.0,
-        .reload = 2.0,
+        .reload = 1.0,
         .count = 4,
         .rarity = RarityID::kEpic,
         .attributes = {
@@ -613,13 +614,13 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
     },
     {
         .name = "Yggdrasil",
-        .description = "Unfortunately, its powers are useless here",
+        .description = "Rumored to be able to bring the fallen back to life... if you're lucky enough",
         .health = 1.0,
         .damage = 1.0,
         .radius = 12.0,
         .reload = 10.0,
         .count = 1,
-        .rarity = RarityID::kUnique,
+        .rarity = RarityID::kMythic,
         .attributes = {
             .defend_only = 1,
             .icon_angle = M_PI
@@ -1091,6 +1092,7 @@ uint32_t level_to_score(uint32_t level) {
 uint32_t loadout_slots_at_level(uint32_t level) {
     if (level > MAX_LEVEL) level = MAX_LEVEL;
     uint32_t ret = 5 + level / LEVELS_PER_EXTRA_SLOT;
+    if (level == MAX_LEVEL) ++ret;
     if (ret > MAX_SLOT_COUNT) return MAX_SLOT_COUNT;
     return ret;
 }
@@ -1098,4 +1100,9 @@ uint32_t loadout_slots_at_level(uint32_t level) {
 float hp_at_level(uint32_t level) {
     if (level > MAX_LEVEL) level = MAX_LEVEL;
     return BASE_HEALTH + level;
+}
+
+std::string name_or_unnamed(std::string const &name) {
+    if (name.size() == 0) return "Unnamed";
+    return name;
 }

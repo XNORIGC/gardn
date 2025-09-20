@@ -20,11 +20,13 @@ namespace Game {
     extern EntityID camera_id;
     extern EntityID player_id;
     extern std::string nickname;
+    extern std::string dev_password;
     extern std::string disconnect_message;
     extern std::array<uint8_t, PetalID::kNumPetals> seen_petals;
     extern std::array<uint8_t, MobID::kNumMobs> seen_mobs;
     
     extern double timestamp;
+    extern double scale;
     
     extern double score;
     extern float overlevel_timer;
@@ -39,7 +41,12 @@ namespace Game {
     extern uint8_t simulation_ready;
     extern uint8_t on_game_screen;
     extern uint8_t show_debug;
-    
+
+    extern uint8_t show_chat;
+    extern std::string chat_text;
+
+    extern uint64_t recovery_id;
+
     void init();
     void reset();
     uint8_t alive();
@@ -54,6 +61,7 @@ namespace Game {
     void delete_petal(uint8_t);
     void swap_petals(uint8_t, uint8_t);
     void swap_all_petals();
+    void send_chat(std::string const &);
     void on_message(uint8_t *, uint32_t);
     void poll_ui_event(Ui::ScreenEvent const &);
 };
