@@ -33,6 +33,26 @@ static void _update_client(Simulation *sim, Client *client) {
         in_view.insert(ent.id);
     });
 
+    sim->for_each<kMob>([&](Simulation*, Entity &ent){
+    if (ent.get_mob_id() == MobID::kTargetDummy) {
+        in_view.insert(ent.id);
+    }
+    });
+
+    sim->for_each<kFlower>([&](Simulation*, Entity& ent) {
+        if (ent.id != client->camera && ent.get_team() == camera.get_team()) {
+            in_view.insert(ent.id);
+        }
+    });
+
+    sim->for_each<kChat>([&](Simulation*, Entity& chat_ent) {
+        if (!sim->ent_exists(chat_ent.get_parent())) return;
+        Entity const& parent_ent = sim->get_ent(chat_ent.get_parent());
+        if (parent_ent.get_team() == camera.get_team()) {
+            in_view.insert(chat_ent.id);
+        }
+    });
+
     for (EntityID const &i: client->in_view) {
         if (!in_view.contains(i)) {
             writer.write<EntityID>(i);
@@ -70,6 +90,14 @@ void GameInstance::init() {
     #ifdef GAMEMODE_TDM
     team_manager.add_team(ColorID::kBlue);
     team_manager.add_team(ColorID::kRed);
+    for (uint32_t i = 0; i < 5; ++i) {
+        float x = lerp(MAP_DATA[3].left, MAP_DATA[3].right, (i + 0.5f) / 5.0f);
+        float y = lerp(MAP_DATA[3].top, MAP_DATA[3].bottom, frand()); // 纵向仍随机
+        Entity& mob = alloc_mob(&simulation, MobID::kTargetDummy, x, y, team_manager.teams[1]);
+        mob.set_parent(NULL_ENTITY);
+        mob.set_color(simulation.get_ent(team_manager.teams[1]).get_color());
+        mob.base_entity = NULL_ENTITY;
+    }
     #endif
 }
 
@@ -118,4 +146,15 @@ void GameInstance::remove_client(Client *client) {
         c.client = nullptr;
     }
     client->game = nullptr;
+}
+
+void GameInstance::broadcast_message(std::string const& msg) {
+    for (Client* client : clients) {
+
+        Writer writer(Server::OUTGOING_PACKET);
+        writer.write<uint8_t>(Clientbound::kBroadcast); // 新增的枚举类型
+        writer.write<std::string>(msg);
+
+        client->send_packet(writer.packet, writer.at - writer.packet);
+    }
 }

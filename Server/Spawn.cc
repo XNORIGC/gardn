@@ -24,7 +24,7 @@ Entity &alloc_drop(Simulation *sim, PetalID::T drop_id) {
 
     drop.add_component(kDrop);
     drop.set_drop_id(drop_id);
-    entity_set_despawn_tick(drop, 10 * (2 + PETAL_DATA[drop_id].rarity) * TPS);
+    entity_set_despawn_tick(drop, 5 * (2 + PETAL_DATA[drop_id].rarity) * TPS);
     drop.immunity_ticks = TPS / 3;
     return drop;
 }
@@ -60,7 +60,7 @@ static Entity &__alloc_mob(Simulation *sim, MobID::T mob_id, float x, float y, E
     mob.set_health_ratio(1);
 
     mob.detection_radius = data.attributes.aggro_radius;
-    mob.score_reward = data.xp;
+    mob.score_reward = data.xp * 3;
 
     mob.add_component(kName);
     mob.set_name(data.name);
@@ -70,6 +70,8 @@ static Entity &__alloc_mob(Simulation *sim, MobID::T mob_id, float x, float y, E
         mob.add_component(kFlower);
         mob.set_angle(0);
         mob.set_color(ColorID::kGray);
+    } else if (mob_id == MobID::kTargetDummy) {
+        mob.set_angle(0);
     }
     return mob;
 }
@@ -78,6 +80,7 @@ Entity &alloc_mob(Simulation *sim, MobID::T mob_id, float x, float y, EntityID c
     struct MobData const &data = MOB_DATA[mob_id];
     if (data.attributes.segments <= 1) {
         Entity &ent = __alloc_mob(sim, mob_id, x, y, team);
+        if (mob_id == MobID::kHornet && frand() < 0.5f) { BitMath::set(ent.custom_flags, EntityCustomFlags::kIsVariant); } else
         if (mob_id == MobID::kAntHole) {
             std::vector<MobID::T> const spawns = { 
                 MobID::kBabyAnt, MobID::kBabyAnt, MobID::kBabyAnt, 
@@ -160,7 +163,7 @@ Entity &alloc_petal(Simulation *sim, PetalID::T petal_id, Entity const &parent) 
     petal.set_health_ratio(1);
     petal.poison_damage = petal_data.attributes.poison_damage;
     if (petal_id == PetalID::kPincer) petal.slow_inflict = TPS * 1.5;
-    if (petal_id == PetalID::kBone) petal.armor = 10;
+    if (petal_data.attributes.armor) petal.armor = petal_data.attributes.armor;
 
     if (parent.id == NULL_ENTITY) petal.base_entity = petal.id;
     else petal.base_entity = parent.id;
@@ -183,6 +186,23 @@ Entity &alloc_web(Simulation *sim, float radius, Entity const &parent) {
     web.add_component(kWeb);
     entity_set_despawn_tick(web, 10 * TPS);
     return web;
+}
+
+Entity& alloc_poison_web(Simulation* sim, float radius, Entity const& parent) {
+    Entity& poison_web = sim->alloc_ent();
+    poison_web.add_component(kPhysics);
+    poison_web.set_x(parent.get_x());
+    poison_web.set_y(parent.get_y());
+    poison_web.set_angle(frand() * 2 * M_PI);
+    poison_web.set_radius(radius);
+    poison_web.mass = 1.0;
+    poison_web.friction = 1.0;
+    poison_web.add_component(kRelations);
+    poison_web.set_team(parent.get_team());
+    poison_web.set_parent(parent.id);
+    poison_web.add_component(kPoisonWeb);
+    entity_set_despawn_tick(poison_web, 10 * TPS);
+    return poison_web;
 }
 
 Entity &alloc_chat(Simulation *sim, std::string &text, Entity const &parent) {

@@ -6,6 +6,8 @@
 #include <Shared/Simulation.hh>
 #include <Shared/StaticData.hh>
 
+#include <Server/Client.hh>
+
 #include <cmath>
 
 struct PlayerBuffs {
@@ -14,9 +16,12 @@ struct PlayerBuffs {
     float heal;
     float extra_vision;
     float extra_health;
+    float movement_speed = 1;
+    float reduce_reload = 1;
     uint8_t yinyang_count;
     uint8_t is_poisonous : 1;
     uint8_t has_cutter : 1;
+    uint8_t has_corruption : 1;
     uint8_t equip_flags;
 };
 
@@ -32,30 +37,27 @@ static struct PlayerBuffs _get_petal_passive_buffs(Simulation *sim, Entity &play
         struct PetalData const &petal_data = PETAL_DATA[slot_petal_id];
         if (petal_data.attributes.equipment != EquipmentFlags::kNone)
             player.set_equip_flags(player.get_equip_flags() | (1 << petal_data.attributes.equipment));
-        if (slot_petal_id == PetalID::kAntennae) {
-            buffs.extra_vision = fclamp(0.4,buffs.extra_vision,1);
-        } else if (slot_petal_id == PetalID::kObserver) {
-            buffs.extra_vision = 0.75;
-        } else if (slot_petal_id == PetalID::kThirdEye) {
-            buffs.extra_range = 75;
-        } else if (slot_petal_id == PetalID::kCutter) {
+        if (slot_petal_id == PetalID::kCutter) {
             buffs.has_cutter = 1;
+        } else if (slot_petal_id == PetalID::kCorruption) {
+            buffs.extra_health += petal_data.attributes.extra_health;
+            player.set_radius(BASE_FLOWER_RADIUS * 1.15);
         } else if (slot_petal_id == PetalID::kYinYang) {
             ++buffs.yinyang_count;
         }
+        if (petal_data.attributes.reduce_reload) buffs.reduce_reload *= petal_data.attributes.reduce_reload;
+        buffs.extra_range += petal_data.attributes.extra_range;
+        buffs.extra_vision = std::max(buffs.extra_vision, petal_data.attributes.extra_vision);
+        buffs.movement_speed += petal_data.attributes.movement_speed;
         if (!player.loadout[i].already_spawned) continue;
+        buffs.extra_health += petal_data.attributes.extra_health;
         if (slot_petal_id == PetalID::kLeaf) 
             buffs.heal += petal_data.attributes.constant_heal / TPS;
         else if (slot_petal_id == PetalID::kYucca && BitMath::at(player.input, InputFlags::kDefending) && !BitMath::at(player.input, InputFlags::kAttacking)) 
             buffs.heal += petal_data.attributes.constant_heal / TPS;
         if (slot_petal_id == PetalID::kFaster) 
             buffs.extra_rot += 1.0;
-        else if (slot_petal_id == PetalID::kCactus) 
-            buffs.extra_health += 20;
-        else if (slot_petal_id == PetalID::kTricac) 
-            buffs.extra_health += 60;
-        else if (slot_petal_id == PetalID::kPoisonCactus) {
-            buffs.extra_health += 20;
+        if (slot_petal_id == PetalID::kPoisonCactus) {
             buffs.is_poisonous = 1;
         } else if (slot_petal_id == PetalID::kSalt) {
             player.damage_reflection = 0.25;
@@ -113,6 +115,8 @@ void tick_player_behavior(Simulation *sim, Entity &player) {
         camera.set_fov(BASE_FOV * (1 - buffs.extra_vision));
     }
 
+    player.speed_ratio *= buffs.movement_speed;
+    bool bubble_spawned = false;
     DEBUG_ONLY(assert(player.get_loadout_count() <= MAX_SLOT_COUNT);)
     for (uint32_t i = 0; i < player.get_loadout_count(); ++i) {
         LoadoutSlot &slot = player.loadout[i];
@@ -122,6 +126,16 @@ void tick_player_behavior(Simulation *sim, Entity &player) {
             slot.update_id(sim, player.get_loadout_ids(i));
         PetalID::T slot_petal_id = slot.get_petal_id();
         struct PetalData const &petal_data = PETAL_DATA[slot_petal_id];
+        if (slot_petal_id == PetalID::kBubble) {
+            if (bubble_spawned) {
+                sim->request_delete(slot.petals[0].ent_id);
+                slot.reset();
+                player.set_loadout_reloads(i, 0);
+                continue;
+            }
+            // 如果是第一个泡泡，标记为已处理
+            bubble_spawned = true;
+        }
         DEBUG_ONLY(assert(petal_data.count <= MAX_PETALS_IN_CLUMP);)
 
         if (slot_petal_id == PetalID::kNone || petal_data.count == 0)
@@ -137,6 +151,7 @@ void tick_player_behavior(Simulation *sim, Entity &player) {
             if (!sim->ent_alive(petal_slot.ent_id)) {
                 petal_slot.ent_id = NULL_ENTITY;
                 game_tick_t reload_time = (petal_data.reload * TPS);
+                reload_time *= buffs.reduce_reload;
                 if (!slot.already_spawned) reload_time += TPS;
                 float this_reload = reload_time == 0 ? 1 : (float) petal_slot.reload / reload_time;
                 min_reload = std::min(min_reload, this_reload);

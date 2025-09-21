@@ -52,6 +52,8 @@ namespace Game {
     uint8_t show_chat = 0;
     std::string chat_text;
 
+    std::vector<BroadcastMessage> broadcasts;
+
     uint64_t recovery_id = 0;
 }
 
@@ -139,6 +141,9 @@ void Game::init() {
     );
     game_ui_window.add_child(
         Ui::make_chat_input()
+    );
+    game_ui_window.add_child(
+        Ui::make_broadcast_display()
     );
     game_ui_window.add_child(
         new Ui::HContainer({

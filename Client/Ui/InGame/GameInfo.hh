@@ -32,6 +32,12 @@ namespace Ui {
         virtual void on_render(Renderer &) override;
     };
 
+    class BroadcastDisplay final : public Element {
+    public:
+        BroadcastDisplay();
+        virtual void on_render(Renderer &) override;
+    };
+
     class MobileJoyStick final : public Element {
         float joystick_x;
         float joystick_y;
@@ -54,4 +60,5 @@ namespace Ui {
     Element *make_mobile_chat_button();
     Element *make_mobile_fullscreen_button();
     Element *make_mobile_joystick();
+    Element *make_broadcast_display();
 }

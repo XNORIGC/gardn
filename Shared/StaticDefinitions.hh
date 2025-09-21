@@ -8,12 +8,12 @@
 inline uint32_t const ARENA_WIDTH = 40000;
 inline uint32_t const ARENA_HEIGHT = 4000;
 
-inline uint32_t const MAX_SLOT_COUNT = 12;
-inline uint32_t const LEVELS_PER_EXTRA_SLOT = 15;
+inline uint32_t const MAX_SLOT_COUNT = 9;
+inline uint32_t const LEVELS_PER_EXTRA_SLOT = 10;
 inline uint32_t const LEADERBOARD_SIZE = 10;
-inline uint32_t const MAX_PETALS_IN_CLUMP = 4;
+inline uint32_t const MAX_PETALS_IN_CLUMP = 5;
 inline uint32_t const MAX_DIFFICULTY = 3;
-inline uint32_t const MAX_DROPS_PER_MOB = 6;
+inline uint32_t const MAX_DROPS_PER_MOB = 10;
 inline uint32_t const CHAT_SIZE = 5;
 
 namespace DamageType {
@@ -76,6 +76,17 @@ namespace PetalID {
         kBone,
         kYucca,
         kCorn,
+        kCorruption,
+        kPoisonPeas2,
+        kQuint,
+        kTriWing,
+        kPoisonWeb,
+        kBullet,
+        kTankEgg,
+        kDrone,
+        kDestroyerBullet,
+        kM28,
+        kCrown,
         kNumPetals
     };
 };
@@ -107,6 +118,8 @@ namespace MobID {
         kShinyLadybug,
         kSquare,
         kDigger,
+        kTargetDummy,
+        kTank,
         kNumMobs
     };
 };
@@ -156,6 +169,12 @@ namespace EntityFlags {
     };
 };
 
+namespace EntityCustomFlags {
+    enum {
+        kIsVariant
+    };
+};
+
 namespace FaceFlags {
     enum {
         kAttacking,
@@ -174,6 +193,7 @@ namespace EquipmentFlags {
         kAntennae,
         kObserver,
         kCutter,
+        kCrown,
         kNone
     };
 };
@@ -208,6 +228,13 @@ struct PetalAttributes {
     uint8_t spawns = MobID::kNumMobs;
     uint8_t spawn_count = 0;
     uint8_t equipment = EquipmentFlags::kNone;
+    float extra_health = 0;
+    float movement_speed = 0;
+    float reduce_reload = 0;
+    float extra_range = 0;
+    float extra_vision = 0;
+    float armor = 0;
+    PetalID::T controls = PetalID::kNone;
 };
 
 struct PetalData {

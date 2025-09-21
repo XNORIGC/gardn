@@ -126,6 +126,13 @@ void Game::render_game() {
         renderer.scale(ent.animation);
         render_web(renderer, ent);
     });
+    simulation.for_each<kPoisonWeb>([](Simulation *sim, Entity const &ent){
+        RenderContext context(&renderer);
+        renderer.translate(ent.get_x(), ent.get_y());
+        renderer.rotate(ent.get_angle());
+        renderer.scale(ent.animation);
+        render_poison_web(renderer, ent);
+    });
     simulation.for_each<kDrop>([](Simulation *sim, Entity const &ent){
         RenderContext context(&renderer);
         renderer.translate(ent.get_x(), ent.get_y());

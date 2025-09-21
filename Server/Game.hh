@@ -10,6 +10,7 @@ class Client;
 
 class GameInstance {
     std::set<Client *> clients;
+public:
     TeamManager team_manager;
 public:
     Simulation simulation;
@@ -18,4 +19,5 @@ public:
     void tick();
     void add_client(Client *, uint64_t);
     void remove_client(Client *);
+    void broadcast_message(const std::string &msg);
 };

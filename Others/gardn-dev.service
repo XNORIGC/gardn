@@ -1,0 +1,10 @@
+[Unit]
+Description=the gardn project development dedicated server.
+
+[Service]
+Type=simple
+ExecStart=/opt/gardn-dev/Server/build/gardn-server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

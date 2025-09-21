@@ -47,7 +47,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 5.0,
         .damage = 8.0,
         .radius = 7.0,
-        .reload = 1.0,
+        .reload = 0.8,
         .count = 1,
         .rarity = RarityID::kCommon,
         .attributes = {}
@@ -58,7 +58,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 20.0,
         .damage = 20.0,
         .radius = 12.0,
-        .reload = 4.5,
+        .reload = 3.5,
         .count = 1,
         .rarity = RarityID::kCommon,
         .attributes = {}
@@ -84,7 +84,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .count = 1,
         .rarity = RarityID::kUnusual,
         .attributes = {
-            .constant_heal = 1,
+            .constant_heal = 1.5,
             .icon_angle = -1
         }
     },
@@ -94,7 +94,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 5.0,
         .damage = 8.0,
         .radius = 7.0,
-        .reload = 1.0,
+        .reload = 0.8,
         .count = 2,
         .rarity = RarityID::kUnusual,
         .attributes = {}
@@ -156,6 +156,8 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .count = 1,
         .rarity = RarityID::kRare,
         .attributes = {
+            .secondary_reload = 0.5, 
+            .defend_only = 1,
             .icon_angle = 1,
             .rotation_style = PetalAttributes::kFollowRot 
         }
@@ -191,7 +193,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 100.0,
         .damage = 10.0,
         .radius = 12.0,
-        .reload = 7.5,
+        .reload = 4,
         .count = 1,
         .rarity = RarityID::kRare,
         .attributes = {}
@@ -205,7 +207,9 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .reload = 1.0,
         .count = 1,
         .rarity = RarityID::kRare,
-        .attributes = {}
+        .attributes = {
+            .extra_health = 20
+        }
     },
     {
         .name = "Web",
@@ -213,7 +217,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 10.0,
         .damage = 5.0,
         .radius = 10.0,
-        .reload = 3.0,
+        .reload = 1.5,
         .count = 1,
         .rarity = RarityID::kRare,
         .attributes = {
@@ -227,7 +231,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 15.0,
         .damage = 15.0,
         .radius = 10.0,
-        .reload = 2.5,
+        .reload = 1.5,
         .count = 1,
         .rarity = RarityID::kRare,
         .attributes = {
@@ -253,9 +257,9 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .name = "Sand",
         .description = "It's coarse, rough, and gets everywhere",
         .health = 10.0,
-        .damage = 3.0,
+        .damage = 5.0,
         .radius = 7.0,
-        .reload = 1.5,
+        .reload = 1.0,
         .count = 4,
         .rarity = RarityID::kRare,
         .attributes = {
@@ -268,7 +272,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 10.0,
         .damage = 10.0,
         .radius = 10.0,
-        .reload = 2.5,
+        .reload = 1.5,
         .count = 1,
         .rarity = RarityID::kRare,
         .attributes = {
@@ -301,22 +305,24 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 5.0,
         .damage = 8.0,
         .radius = 7.0,
-        .reload = 1.0,
+        .reload = 0.8,
         .count = 3,
         .rarity = RarityID::kEpic,
-        .attributes = {}
+        .attributes = {
+            .movement_speed = 0.03
+        }
     },
     {
         .name = "Egg",
         .description = "Something interesting might pop out of this",
-        .health = 50.0,
+        .health = 200.0,
         .damage = 1.0,
         .radius = 12.5,
         .reload = 1.0,
-        .count = 2,
+        .count = 1,
         .rarity = RarityID::kEpic,
         .attributes = { 
-            .secondary_reload = 2.5,
+            .secondary_reload = 1.0,
             .defend_only = 1,
             .rotation_style = PetalAttributes::kNoRot,
             .spawns = MobID::kSoldierAnt
@@ -344,7 +350,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 7.0,
         .damage = 8.0,
         .radius = 7.0,
-        .reload = 1.5,
+        .reload = 1,
         .count = 3,
         .rarity = RarityID::kEpic,
         .attributes = {
@@ -374,14 +380,14 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
     {
         .name = "Egg",
         .description = "Something interesting might pop out of this",
-        .health = 50.0,
+        .health = 200.0,
         .damage = 1.0,
         .radius = 15.0,
         .reload = 1.0,
         .count = 1,
-        .rarity = RarityID::kEpic,
+        .rarity = RarityID::kLegendary,
         .attributes = { 
-            .secondary_reload = 2.5,
+            .secondary_reload = 2.0,
             .defend_only = 1,
             .rotation_style = PetalAttributes::kNoRot,
             .spawns = MobID::kBeetle
@@ -405,12 +411,12 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
     {
         .name = "Stick",
         .description = "Harnesses the power of the wind",
-        .health = 10.0,
-        .damage = 1.0,
+        .health = 999999.0,
+        .damage = 0.0,
         .radius = 15.0,
         .reload = 3.0,
         .count = 1,
-        .rarity = RarityID::kLegendary,
+        .rarity = RarityID::kMythic,
         .attributes = { 
             .secondary_reload = 4.0,
             .defend_only = 1,
@@ -438,7 +444,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 10.0,
         .damage = 5.0,
         .radius = 10.0,
-        .reload = 3.0,
+        .reload = 1.5,
         .count = 3,
         .rarity = RarityID::kLegendary,
         .attributes = {
@@ -457,7 +463,8 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .count = 0,
         .rarity = RarityID::kLegendary,
         .attributes = { 
-            .equipment = EquipmentFlags::kAntennae 
+            .equipment = EquipmentFlags::kAntennae,
+            .extra_vision = 0.25
         }
     },
     {
@@ -470,7 +477,8 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .count = 3,
         .rarity = RarityID::kLegendary,
         .attributes = {
-            .clump_radius = 10,
+            .clump_radius = 15,
+            .extra_health = 60
         }
     },
     {
@@ -479,10 +487,13 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 200.0,
         .damage = 10.0,
         .radius = 12.0,
-        .reload = 15.0,
+        .reload = 10.0,
         .count = 1,
         .rarity = RarityID::kEpic,
-        .attributes = {}
+        .attributes = {
+            .mass = 10,
+            .rotation_style = PetalAttributes::kNoRot
+        }
     },
     {
         .name = "Third Eye",
@@ -494,7 +505,8 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .count = 0,
         .rarity = RarityID::kMythic,
         .attributes = { 
-            .equipment = EquipmentFlags::kThirdEye
+            .equipment = EquipmentFlags::kThirdEye,
+            .extra_range = 75
         }
     },
     {
@@ -505,9 +517,11 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .radius = 12.5,
         .reload = 0.0,
         .count = 0,
-        .rarity = RarityID::kMythic,
+        .rarity = RarityID::kUnique,
         .attributes = { 
-            .equipment = EquipmentFlags::kObserver
+            .equipment = EquipmentFlags::kObserver,
+            .extra_vision = 0.75,
+            .controls = PetalID::kMissile
         }
     },
     {
@@ -523,7 +537,8 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
             .poison_damage = {
                 .damage = 1.0,
                 .time = 5.0
-            }
+            },
+            .extra_health = 20
         }
     },
     {
@@ -566,13 +581,14 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .description = "Where did this come from?",
         .health = 1000.0,
         .damage = 1.0,
-        .radius = 50.0,
+        .radius = 90.0,
         .reload = 10.0,
         .count = 1,
-        .rarity = RarityID::kMythic,
+        .rarity = RarityID::kLegendary,
         .attributes = {
             .secondary_reload = 0.5,
-            .mass = 200
+            .mass = 400,
+            .controls = PetalID::kMoon
         }
     },
     {
@@ -614,13 +630,13 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
     },
     {
         .name = "Yggdrasil",
-        .description = "Rumored to be able to bring the fallen back to life... if you're lucky enough",
-        .health = 1.0,
-        .damage = 1.0,
+        .description = "Give you a second chance",
+        .health = 999999.0,
+        .damage = 0.0,
         .radius = 12.0,
         .reload = 10.0,
         .count = 1,
-        .rarity = RarityID::kMythic,
+        .rarity = RarityID::kUnique,
         .attributes = {
             .defend_only = 1,
             .icon_angle = M_PI
@@ -630,7 +646,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .name = "Rice",
         .description = "Spawns instantly, but not very strong",
         .health = 1.0,
-        .damage = 4.0,
+        .damage = 8.0,
         .radius = 13.0,
         .reload = 0.05,
         .count = 1,
@@ -645,11 +661,12 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .health = 12.0,
         .damage = 12.0,
         .radius = 12.0,
-        .reload = 2.5,
+        .reload = 1.5,
         .count = 1,
         .rarity = RarityID::kLegendary,
         .attributes = {
-            .icon_angle = 1
+            .icon_angle = 1,
+            .armor = 14
         }
     },
     {
@@ -662,7 +679,7 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .count = 1,
         .rarity = RarityID::kUnusual,
         .attributes = {
-            .constant_heal = 1.5,
+            .constant_heal = 3,
             .icon_angle = -1
         }
     },
@@ -670,15 +687,180 @@ std::array<struct PetalData, PetalID::kNumPetals> const PETAL_DATA = {{
         .name = "Corn", 
         .description = "Takes a long time to spawn, but has a lot of health",
         .health = 500.0,
-        .damage = 2.5,
+        .damage = 5,
         .radius = 16.0,
-        .reload = 10.0,
+        .reload = 8,
         .count = 1,
         .rarity = RarityID::kEpic,
         .attributes = {
             .icon_angle = 0.5
         }
     },
+    {
+        .name = "Corruption",
+        .description = "Corrupts one's soul, turning them against their own kind.",
+        .health = 0.0,
+        .damage = 0.0,
+        .radius = 0,
+        .reload = 0.0,
+        .count = 0,
+        .rarity = RarityID::kUnique,
+        .attributes = {
+            .icon_angle = 0.5,
+            .extra_health = 400,
+            // .reduce_reload = 0.5
+        }
+    },
+    {
+        .name = "Peas",
+        .description = "4 in 1 deal, now with a secret ingredient: poison",
+        .health = 5.0,
+        .damage = 10.0,
+        .radius = 10.0,
+        .reload = 1.0,
+        .count = 4,
+        .rarity = RarityID::kLegendary,
+        .attributes = {
+            .clump_radius = 10,
+            .secondary_reload = 0.1,
+            .defend_only = 1,
+            .poison_damage = {
+                20.0,
+                1
+            }
+        }
+    },
+    {
+        .name = "Quint",
+        .description = "How about FIVE?!",
+        .health = 5.0,
+        .damage = 8.0,
+        .radius = 7.0,
+        .reload = 0.8,
+        .count = 5,
+        .rarity = RarityID::kLegendary,
+        .attributes = {
+            .movement_speed = 0.05,
+        }
+    },
+    {
+        .name = "Wing",
+        .description = "It comes and goes",
+        .health = 15.0,
+        .damage = 15.0,
+        .radius = 10.0,
+        .reload = 1.5,
+        .count = 3,
+        .rarity = RarityID::kLegendary,
+        .attributes = {
+            .icon_angle = 1,
+        }
+    },
+    {
+        .name = "Web",
+        .description = "It's really sticky and toxic",
+        .health = 10.0,
+        .damage = 5.0,
+        .radius = 10.0,
+        .reload = 1.5,
+        .count = 1,
+        .rarity = RarityID::kEpic,
+        .attributes = {
+            .secondary_reload = 0.5,
+            .defend_only = 1,
+            .poison_damage = { 5.0, 1.0 },
+        }
+    },
+    {
+        .name = "Bullet",
+        .description = "You can actually shoot this one",
+        .health = 20.0,
+        .damage = 20.0,
+        .radius = 10.0,
+        .reload = 0.25,
+        .count = 1,
+        .rarity = RarityID::kEpic,
+        .attributes = {
+            .secondary_reload = 0.25,
+            .defend_only = 1,
+            .icon_angle = 1,
+            .rotation_style = PetalAttributes::kFollowRot
+        }
+    },
+    {
+        .name = "Egg",
+        .description = "Something interesting might pop out of this",
+        .health = 200.0,
+        .damage = 1.0,
+        .radius = 15.0,
+        .reload = 5.0,
+        .count = 1,
+        .rarity = RarityID::kMythic,
+        .attributes = {
+            .secondary_reload = 25.0,
+            .defend_only = 1,
+            .rotation_style = PetalAttributes::kNoRot,
+            .spawns = MobID::kTank
+        }
+    },
+    {
+        .name = "Drone",
+        .description = "Use your left mouse button to control the drones",
+        .health = 20.0,
+        .damage = 20.0,
+        .radius = 15.0,
+        .reload = 7,
+        .count = 1,
+        .rarity = RarityID::kLegendary,
+        .attributes = {
+            .secondary_reload = 0.1,
+            .defend_only = 1,
+            .rotation_style = PetalAttributes::kFollowRot,
+            .controls = PetalID::kDrone,
+        }
+    },
+    {
+        .name = "DestroyerBullet",
+        .description = "You can actually shoot this one",
+        .health = 30.0,
+        .damage = 70.0,
+        .radius = 20.0,
+        .reload = 10,
+        .count = 1,
+        .rarity = RarityID::kEpic,
+        .attributes = {
+            .secondary_reload = 0.25,
+            .defend_only = 1,
+            .icon_angle = 1,
+            .rotation_style = PetalAttributes::kFollowRot
+        }
+    },
+    {
+        .name = "M28",
+        .description = "Wow, A yummy M28",
+        .health = 150.0,
+        .damage = 15.5,
+        .radius = 16.0,
+        .reload = 5.0,
+        .count = 1,
+        .rarity = RarityID::kUnique,
+        .attributes = {
+            .icon_angle = 0.5
+        }
+    },
+    {
+        .name = "Pharaoh's Crown",
+        .description = "Allows your flower to sense foes from farther away",
+        .health = 0.0,
+        .damage = 0.0,
+        .radius = 12.5,
+        .reload = 0.0,
+        .count = 0,
+        .rarity = RarityID::kUnique,
+        .attributes = {
+            .equipment = EquipmentFlags::kCrown
+        }
+    }
 }};
 
 std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
@@ -691,7 +873,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {14.0},
         .xp = 1,
         .drops = {
-            PetalID::kLight, PetalID::kLeaf, PetalID::kTwin, PetalID::kRice, PetalID::kTriplet
+            PetalID::kLight, PetalID::kLeaf, PetalID::kTwin, PetalID::kRice, PetalID::kTriplet, PetalID::kQuint, PetalID::kBone
         }, 
         .attributes = {}
     },
@@ -704,7 +886,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {14.0},
         .xp = 3,
         .drops = {
-            PetalID::kLight, PetalID::kLeaf, PetalID::kTwin, PetalID::kCorn, PetalID::kBone
+            PetalID::kLight, PetalID::kLeaf, PetalID::kTwin, PetalID::kCorn, PetalID::kBone, PetalID::kTriplet, PetalID::kQuint
         }, 
         .attributes = {}
     },
@@ -717,7 +899,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {14.0},
         .xp = 5,
         .drops = {
-            PetalID::kTwin, PetalID::kIris, PetalID::kWing, PetalID::kFaster, PetalID::kTriplet
+            PetalID::kTwin, PetalID::kIris, PetalID::kWing, PetalID::kFaster, PetalID::kTriplet, PetalID::kQuint, PetalID::kBone
         }, 
         .attributes = {}
     },
@@ -730,7 +912,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {20.0},
         .xp = 4,
         .drops = {
-            PetalID::kLight, PetalID::kStinger, PetalID::kTwin, PetalID::kWing
+            PetalID::kLight, PetalID::kStinger, PetalID::kTwin, PetalID::kWing, PetalID::kTriplet, PetalID::kQuint
         },
         .attributes = {}
     },
@@ -756,7 +938,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {35.0},
         .xp = 10,
         .drops = {
-            PetalID::kIris, PetalID::kSalt, PetalID::kWing, PetalID::kTriplet
+            PetalID::kIris, PetalID::kSalt, PetalID::kWing, PetalID::kTriplet, PetalID::kQuint
         },
         .attributes = {}
     },
@@ -782,7 +964,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {75.0},
         .xp = 50,
         .drops = {
-            PetalID::kIris, PetalID::kWing, PetalID::kBlueIris, PetalID::kTriplet, PetalID::kBeetleEgg, PetalID::kThirdEye
+            PetalID::kIris, PetalID::kWing, PetalID::kBlueIris, PetalID::kTriplet, PetalID::kBeetleEgg, PetalID::kQuint, PetalID::kTriWing, PetalID::kCrown
         }, 
         .attributes = { 
             .aggro_radius = 750
@@ -810,7 +992,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {40.0},
         .xp = 12,
         .drops = {
-            PetalID::kDandelion, PetalID::kMissile, PetalID::kWing, PetalID::kBubble, PetalID::kAntennae
+            PetalID::kDandelion, PetalID::kMissile, PetalID::kWing, PetalID::kBubble, PetalID::kAntennae, PetalID::kTriWing
         },
         .attributes = {
             .aggro_radius = 600
@@ -870,7 +1052,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {35.0},
         .xp = 2,
         .drops = {
-            PetalID::kLight, PetalID::kTwin, PetalID::kLeaf, PetalID::kPeas, PetalID::kTriplet
+            PetalID::kTwin, PetalID::kLeaf, PetalID::kPeas, PetalID::kTriplet, PetalID::kPoisonPeas, PetalID::kPoisonPeas2, PetalID::kQuint
         },
         .attributes = {
             .segments = 10
@@ -885,7 +1067,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {35.0},
         .xp = 3,
         .drops = {
-            PetalID::kIris, PetalID::kPoisonPeas, PetalID::kBlueIris
+            PetalID::kIris, PetalID::kPoisonPeas, PetalID::kBlueIris, PetalID::kPoisonPeas2
         },
         .attributes = { 
             .segments = 10, 
@@ -932,7 +1114,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {35.0},
         .xp = 10,
         .drops = {
-            PetalID::kIris, PetalID::kPincer, PetalID::kTriplet, PetalID::kLotus
+            PetalID::kIris, PetalID::kPincer, PetalID::kTriplet, PetalID::kLotus, PetalID::kQuint
         }, 
         .attributes = {
             .poison_damage = {
@@ -950,7 +1132,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {15.0},
         .xp = 8,
         .drops = {
-            PetalID::kStinger, PetalID::kWeb, PetalID::kFaster, PetalID::kTriweb
+            PetalID::kStinger, PetalID::kWeb, PetalID::kFaster, PetalID::kTriweb, PetalID::kThirdEye, PetalID::kPoisonWeb, PetalID::kM28
         },
         .attributes = { 
             .poison_damage = {
@@ -968,7 +1150,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {45.0},
         .xp = 25,
         .drops = {
-            PetalID::kIris, PetalID::kWing, PetalID::kAntEgg, PetalID::kTriplet
+            PetalID::kIris, PetalID::kWing, PetalID::kAntEgg, PetalID::kQuint, PetalID::kTriWing, PetalID::kBone
         },
         .attributes = {
             .stationary = 1 
@@ -983,7 +1165,7 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         .radius = {25.0},
         .xp = 15,
         .drops = {
-            PetalID::kTwin, PetalID::kIris, PetalID::kWing, PetalID::kAntEgg, PetalID::kTringer
+            PetalID::kQuint, PetalID::kIris, PetalID::kWing, PetalID::kAntEgg, PetalID::kTringer, PetalID::kTriWing
         },
         .attributes = {
             .aggro_radius = 750
@@ -1030,6 +1212,36 @@ std::array<struct MobData, MobID::kNumMobs> const MOB_DATA = {{
         },
         .attributes = {}
     },
+    {
+        .name = "Target Dummy",
+        .description = "How do you have this in your gallery?",
+        .rarity = RarityID::kUnique,
+        .health = {4000.0},
+        .damage = 15.0,
+        .radius = {50.0},
+        .xp = 50000,
+        .drops = {
+            PetalID::kTringer
+        },
+        .attributes = {
+            .stationary = 1
+        }
+    },
+    {
+        .name = "Tank",
+        .description = "???",
+        .rarity = RarityID::kEpic,
+        .health = {200.0, 400.0},
+        .damage = 20.0,
+        .radius = {40.0, 80.0},
+        .xp = 400,
+        .drops = {
+            PetalID::kBullet, PetalID::kTankEgg, PetalID::kDrone, PetalID::kObserver,PetalID::kDestroyerBullet,
+        },
+        .attributes = {
+            .aggro_radius = 1200
+        }
+    }
 }};
 
 std::array<StaticArray<float, MAX_DROPS_PER_MOB>, MobID::kNumMobs> const MOB_DROP_CHANCES = [](){
@@ -1061,7 +1273,7 @@ std::array<StaticArray<float, MAX_DROPS_PER_MOB>, MobID::kNumMobs> const MOB_DRO
     for (MobID::T id = 0; id < MobID::kNumMobs; ++id) {
         for (PetalID::T const drop_id : MOB_DATA[id].drops) {
             float chance = fclamp((BASE_NUM * RARITY_MULT[PETAL_DATA[drop_id].rarity]) / (PETAL_AGGREGATE_DROPS[drop_id] * MOB_SPAWN_RATES[id] * MOB_DATA[id].attributes.segments), 0, 1);
-            ret[id].push(chance);
+            ret[id].push(fmin(chance * 3, 1));
         }
     }
     return ret;

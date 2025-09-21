@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <vector>
+#include "AsymmetricBattle.hh"
 
 static void calculate_leaderboard(Simulation *sim) {
     std::vector<Entity const *> players;
@@ -63,6 +64,10 @@ void Simulation::on_tick() {
 
 void Simulation::post_tick() {
     arena_info.reset_protocol();
+    #ifdef GAMEMODE_TDM
+    static AsymmetricBattle asymmetric_battle(&Server::game);
+    asymmetric_battle.update();
+    #endif
     for_each_entity([](Simulation *sim, Entity &ent) {
         //no deletions mid tick
         ent.reset_protocol();

@@ -31,13 +31,12 @@ void render_mob(Renderer &ctx, Entity const &ent) {
     draw_static_mob(ent.get_mob_id(), ctx, attrs);
     if (ent.deletion_animation > 0)
         Game::seen_mobs[ent.get_mob_id()] = 1;
-    /*
     #ifdef DEBUG
+    if (!Game::show_debug) return;
     ctx.set_stroke(0x80ff0000);
     ctx.set_line_width(1);
     ctx.begin_path();
     ctx.arc(0,0,MOB_DATA[ent.get_mob_id()].attributes.aggro_radius);
     ctx.stroke();
     #endif
-    */
 }

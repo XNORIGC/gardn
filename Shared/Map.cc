@@ -11,8 +11,8 @@
 using namespace Map;
 
 uint32_t Map::difficulty_at_level(uint32_t level) {
-    if (level / LEVELS_PER_EXTRA_SLOT > MAX_DIFFICULTY) return MAX_DIFFICULTY;
-    return level / LEVELS_PER_EXTRA_SLOT;
+    if (level / (LEVELS_PER_EXTRA_SLOT * 1.5) > MAX_DIFFICULTY) return MAX_DIFFICULTY;
+    return level / (LEVELS_PER_EXTRA_SLOT * 1.5);
 }
 
 uint32_t Map::get_zone_from_pos(float x, float y) {

@@ -18,4 +18,6 @@ void render_petal(Renderer &ctx, Entity const &ent) {
     draw_static_petal_single(ent.get_petal_id(), ctx);
     if (PETAL_DATA[ent.get_petal_id()].rarity == RarityID::kUnique && frand() < fclamp(0.25 * Ui::dt/16.67, 0, 1))
         Particle::add_unique_particle(ent.get_x(), ent.get_y());
+    if (PETAL_DATA[ent.get_petal_id()].rarity == RarityID::kMythic && frand() < fclamp(0.25 * Ui::dt/16.67, 0, 1))
+        Particle::add_mythic_particle(ent.get_x(), ent.get_y());
 }

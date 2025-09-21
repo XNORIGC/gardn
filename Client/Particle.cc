@@ -30,7 +30,7 @@ void Particle::tick_title(Renderer &ctx, double dt) {
         ctx.scale(Ui::scale * part.radius);
         if (PETAL_DATA[part.id].attributes.rotation_style == PetalAttributes::kPassiveRot)
             ctx.rotate(part.angle);
-        if (part.id == PetalID::kPeas || part.id == PetalID::kPoisonPeas)
+        if (part.id == PetalID::kPeas || part.id == PetalID::kPoisonPeas || part.id == PetalID::kPoisonPeas2)
             draw_static_petal(part.id, ctx);
         else
             draw_static_petal_single(part.id, ctx);
@@ -83,6 +83,19 @@ void Particle::tick_game(Renderer &ctx, double dt) {
 }
 
 void Particle::add_unique_particle(float x, float y) {
+    GameParticleEntity part;
+    part.x = x;
+    part.y = y;
+    part.radius = 4;
+    part.opacity = 1;
+    part.color = 0x80000000;
+    Vector rand = Vector::rand(50);
+    part.x_velocity = rand.x;
+    part.y_velocity = rand.y;
+    game_particles.push_back(std::move(part));
+}
+
+void Particle::add_mythic_particle(float x, float y) {
     GameParticleEntity part;
     part.x = x;
     part.y = y;

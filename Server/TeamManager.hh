@@ -8,7 +8,9 @@
 class Simulation;
 
 class TeamManager {
+public:
     StaticArray<EntityID, 4> teams;
+private:
     Simulation *simulation;
 public:
     TeamManager(Simulation *);

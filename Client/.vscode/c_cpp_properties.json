@@ -3,7 +3,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "/home/pc/gardn"
+                "/home/pc/gardn"//, "/home/pc/emsdk/upstream/emscripten/system/include"
             ],
             "defines": [
                 "CLIENTSIDE=1",

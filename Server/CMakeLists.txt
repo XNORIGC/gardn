@@ -30,6 +30,7 @@ set(SOURCES
     Simulation.cc
     Spawn.cc
     TeamManager.cc
+    AsymmetricBattle.cc
     ../Helpers/Math.cc
     ../Helpers/UTF8.cc
     ../Helpers/Vector.cc

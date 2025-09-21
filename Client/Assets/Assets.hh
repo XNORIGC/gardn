@@ -36,3 +36,5 @@ void draw_static_petal(PetalID::T, Renderer &);
 void draw_static_mob(MobID::T, Renderer &, MobRenderAttributes);
 
 void draw_web(Renderer &);
+
+void draw_poison_web(Renderer &);

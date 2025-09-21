@@ -20,6 +20,11 @@ void GalleryMob::on_render(Renderer &ctx) {
     Element::on_render(ctx);
     ctx.begin_path();
     ctx.round_rect(-width / 2, -height / 2, width, height, style.round_radius);
+    if (Game::show_debug) {
+        RenderContext r(&ctx);
+        ctx.translate(-30, -25);
+        ctx.draw_text(std::to_string(id).c_str(), { .size = 18 }); 
+    }
     ctx.clip();
     struct MobData const &data = MOB_DATA[id];
     if (id != MobID::kDigger)

@@ -3,6 +3,7 @@
 #include <Server/PetalTracker.hh>
 #include <Server/Spawn.hh>
 
+#include <Server/Server.hh>
 #include <Shared/Entity.hh>
 #include <Shared/Map.hh>
 #include <Shared/Simulation.hh>
@@ -82,18 +83,20 @@ void entity_on_death(Simulation *sim, Entity const &ent) {
     } else if (ent.has_component(kPetal)) {
         if (ent.get_petal_id() == PetalID::kWeb || ent.get_petal_id() == PetalID::kTriweb)
             alloc_web(sim, 100, ent);
+        if (ent.get_petal_id() == PetalID::kPoisonWeb)
+            alloc_poison_web(sim, 100, ent);
     } else if (ent.has_component(kFlower)) {
         std::vector<PetalID::T> potential = {};
         for (uint32_t i = 0; i < ent.get_loadout_count() + MAX_SLOT_COUNT; ++i) {
             DEBUG_ONLY(assert(ent.get_loadout_ids(i) < PetalID::kNumPetals));
             PetalTracker::remove_petal(sim, ent.get_loadout_ids(i));
-            if (ent.get_loadout_ids(i) != PetalID::kNone && ent.get_loadout_ids(i) != PetalID::kBasic && frand() < 0.95)
+            if (ent.get_loadout_ids(i) != PetalID::kNone && ent.get_loadout_ids(i) != PetalID::kBasic && ent.get_loadout_ids(i) != PetalID::kCorruption && frand() < 0.95)
                 potential.push_back(ent.get_loadout_ids(i));
         }
         for (uint32_t i = 0; i < ent.deleted_petals.size(); ++i) {
             DEBUG_ONLY(assert(ent.deleted_petals[i] < PetalID::kNumPetals));
             PetalTracker::remove_petal(sim, ent.deleted_petals[i]);
-            if (ent.deleted_petals[i] != PetalID::kNone && ent.deleted_petals[i] != PetalID::kBasic && frand() < 0.95)
+            if (ent.deleted_petals[i] != PetalID::kNone && ent.deleted_petals[i] != PetalID::kBasic && ent.get_loadout_ids(i) != PetalID::kCorruption && frand() < 0.95)
                 potential.push_back(ent.deleted_petals[i]);
         }
         //no need to deleted_petals.clear, the player dies
@@ -107,7 +110,7 @@ void entity_on_death(Simulation *sim, Entity const &ent) {
             numDrops = 3;
         for (uint32_t i = 0; i < numDrops; ++i) {
             PetalID::T p_id = potential.back();
-            if (PETAL_DATA[p_id].rarity >= RarityID::kRare && frand() < 0.05) p_id = PetalID::kPollen;
+            if (PETAL_DATA[p_id].rarity >= RarityID::kRare && frand() < 0.15) success_drops.push_back(PetalID::kPollen);
             success_drops.push_back(p_id);
             potential.pop_back();
         }
@@ -120,8 +123,11 @@ void entity_on_death(Simulation *sim, Entity const &ent) {
         //reset all reloads and stuff
         uint32_t num_left = potential.size();
         //set respawn level
-        uint32_t respawn_level = div_round_up(3 * score_to_level(ent.get_score()), 4);
+        uint32_t respawn_level = div_round_up(3.8 * score_to_level(ent.get_score()), 4);
         if (respawn_level > MAX_LEVEL) respawn_level = MAX_LEVEL;
+        if (ent.get_color() == ColorID::kRed) {
+            respawn_level = 99;
+        }
         camera.set_respawn_level(respawn_level);
         uint32_t max_possible = MAX_SLOT_COUNT + loadout_slots_at_level(respawn_level);
         if (num_left > max_possible) num_left = max_possible;
@@ -142,6 +148,50 @@ void entity_on_death(Simulation *sim, Entity const &ent) {
             PetalTracker::add_petal(sim, PetalID::kBasic);
             camera.set_inventory(i, PetalID::kBasic);
         }
+        if (ent.get_color() == ColorID::kRed) {
+            // 固定顺序花瓣
+            std::vector<PetalID::T> fixed_loadout = {
+                PetalID::kAzalea,
+                PetalID::kAzalea,
+                PetalID::kBubble,
+                PetalID::kTringer,
+                PetalID::kTringer,
+                PetalID::kTringer,
+                PetalID::kPoisonPeas2,
+                PetalID::kSalt,
+                PetalID::kCorruption
+            };
+
+            // 填充背包，自动适配 respawn_level 的槽数
+            uint32_t slots = loadout_slots_at_level(respawn_level);
+            for (uint32_t i = 0; i < std::min<uint32_t>(slots, fixed_loadout.size()); ++i) {
+                PetalID::T petal = fixed_loadout[i];
+                PetalTracker::add_petal(sim, petal);
+                camera.set_inventory(i, petal);
+            }
+
+            // 对最低血量的 TargetDummy 造成伤害
+            Entity* lowest_dummy = nullptr;
+            for (uint16_t i = 0; i < ENTITY_CAP; ++i) {
+                EntityID id(i, 0);
+                if (!sim->ent_exists(id)) continue;
+                Entity& e = sim->get_ent(id);
+                if (e.get_mob_id() == MobID::kTargetDummy) {
+                    if (!lowest_dummy || e.health < lowest_dummy->health) {
+                        lowest_dummy = &e;
+                    }
+                }
+            }
+
+            if (lowest_dummy) {
+                lowest_dummy->health = (lowest_dummy->health >= 2000) ? lowest_dummy->health - 2000 : 0;
+                Server::game.broadcast_message("Red team player down -- TargetDummy takes 2000 damage");
+            }
+        }
+        PetalTracker::add_petal(sim, PetalID::kRose);
+        camera.set_inventory(loadout_slots_at_level(respawn_level), PetalID::kRose);
+        PetalTracker::add_petal(sim, PetalID::kBubble);
+        camera.set_inventory(loadout_slots_at_level(respawn_level) + 1, PetalID::kBubble);
     } else if (ent.has_component(kDrop)) {
         if (BitMath::at(ent.flags, EntityFlags::kIsDespawning))
             PetalTracker::remove_petal(sim, ent.get_drop_id());

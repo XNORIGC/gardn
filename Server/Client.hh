@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Shared/Binary.hh>
+#include <Shared/Entity.hh>
 #include <Shared/EntityDef.hh>
 
 #include <cstdint>
@@ -25,6 +26,7 @@ public:
     WebSocket *ws;
     uint8_t verified = 0;
     uint8_t seen_arena = 0;
+    float x = 0, y = 0;
     Client();
     void init(uint64_t);
     void remove();

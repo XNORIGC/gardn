@@ -20,6 +20,7 @@ typedef uint16_t game_tick_t;
     COMPONENT(Drop) \
     COMPONENT(Segmented) \
     COMPONENT(Web) \
+    COMPONENT(PoisonWeb) \
     COMPONENT(Score) \
     COMPONENT(Name) \
     COMPONENT(Chat) \
@@ -68,7 +69,8 @@ SINGLE(Flower, loadout_count, uint8_t) \
 SINGLE(Flower, face_flags, uint8_t) \
 SINGLE(Flower, equip_flags, uint8_t) \
 MULTIPLE(Flower, loadout_ids, PetalID::T, 2 * MAX_SLOT_COUNT) \
-MULTIPLE(Flower, loadout_reloads, uint8_t, MAX_SLOT_COUNT)
+MULTIPLE(Flower, loadout_reloads, uint8_t, MAX_SLOT_COUNT) \
+SINGLE(Flower, ghost_mode, uint8_t)
 
 #define FIELDS_Petal \
 SINGLE(Petal, petal_id, PetalID::T)
@@ -87,6 +89,7 @@ SINGLE(Drop, drop_id, PetalID::T)
 #define FIELDS_Segmented
 
 #define FIELDS_Web
+#define FIELDS_PoisonWeb
 
 #define FIELDS_Score \
 SINGLE(Score, score, uint32_t)
@@ -140,6 +143,7 @@ SINGLE(Chat, text, std::string)
     \
     SINGLE(zone, uint8_t, =0) \
     SINGLE(flags, uint8_t, =0) \
+    SINGLE(custom_flags, uint8_t, =0) \
     SINGLE(deletion_tick, uint8_t, =0) \
     SINGLE(despawn_tick, game_tick_t, =0) \
     SINGLE(secondary_reload, game_tick_t, =0) \

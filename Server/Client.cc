@@ -6,12 +6,18 @@
 #include <Server/Spawn.hh>
 
 #include <Helpers/UTF8.hh>
+#include <Helpers/picosha2.h>
 
 #include <Shared/Binary.hh>
 #include <Shared/Config.hh>
 
 #include <array>
 #include <iostream>
+#include <sstream>
+#include <algorithm>
+#include <cctype>
+#include <limits>
+#include <cmath>
 
 constexpr std::array<uint32_t, RarityID::kNumRarities> RARITY_TO_XP = { 2, 10, 50, 200, 1000, 5000, 0 };
 
@@ -89,6 +95,7 @@ void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) 
             )) return;
             float x = reader.read<float>();
             float y = reader.read<float>();
+            if (x || y) client->x = x, client->y = y;
             if (x == 0 && y == 0) player.acceleration.set(0,0);
             else {
                 if (std::abs(x) > 5e3 || std::abs(y) > 5e3) break;
@@ -97,6 +104,59 @@ void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) 
                 if (m > 200) accel.set_magnitude(PLAYER_ACCELERATION);
                 else accel.set_magnitude(m / 200 * PLAYER_ACCELERATION);
                 player.acceleration = accel;
+            }
+            // 先计算鼠标在世界空间的坐标
+            float mouse_world_x = player.get_x() + client->x / camera.get_fov();
+            float mouse_world_y = player.get_y() + client->y / camera.get_fov();
+
+            // 遍历玩家装备的花瓣
+            for (uint32_t i = 0; i < player.get_loadout_count(); ++i) {
+                LoadoutSlot const& slot = player.loadout[i];
+                PetalID::T slot_petal_id = slot.get_petal_id();
+                PetalData const& petal_data = PETAL_DATA[slot_petal_id];
+
+                if (petal_data.attributes.controls != PetalID::kNone) {
+                    PetalID::T controlled_id = petal_data.attributes.controls;
+
+                    simulation->for_each_entity([&](Simulation* sim2, Entity& ent) {
+                        if (ent.get_parent() != player.id) return;          // 必须是该玩家的
+                        if (ent.get_petal_id() != controlled_id) return;    // 必须是被控制的花瓣类型
+
+                        // ==== 检查与其他同类实体的重叠 ====
+                        sim2->for_each_entity([&](Simulation* sim3, Entity& other) {
+                            if (&other == &ent) return;               // 跳过自己
+                            if (other.get_parent() != player.id) return;    // 只管本玩家的
+                            if (other.get_petal_id() != controlled_id) return;
+
+                            float dx = ent.get_x() - other.get_x();
+                            float dy = ent.get_y() - other.get_y();
+                            float dist2 = dx * dx + dy * dy;
+                            float min_dist = ent.get_radius() + other.get_radius();
+
+                            if (dist2 < min_dist * min_dist) {
+                                float dist = std::sqrt(dist2);
+                                if (dist < 0.0001f) dist = 0.0001f; // 防止除零
+
+                                // 计算分离向量
+                                float overlap = 0.5f * (min_dist - dist);
+                                float nx = dx / dist;
+                                float ny = dy / dist;
+
+                                // 推开双方
+                                ent.set_x(ent.get_x() + nx * overlap * 4);
+                                ent.set_y(ent.get_y() + ny * overlap * 4);
+                                other.set_x(other.get_x() - nx * overlap * 4);
+                                other.set_y(other.get_y() - ny * overlap * 4);
+                            }
+                        });
+
+                        // ==== 控制朝向 ====
+                        Vector aim(mouse_world_x - ent.get_x(), mouse_world_y - ent.get_y());
+                        ent.set_angle(aim.angle());
+                        if (BitMath::at(player.input, InputFlags::kDefending))
+                            ent.set_angle(aim.angle() + M_PI);
+                    });
+                }
             }
             player.input = reader.read<uint8_t>();
             break;
@@ -132,6 +192,7 @@ void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) 
             uint8_t pos = reader.read<uint8_t>();
             if (pos >= MAX_SLOT_COUNT + player.get_loadout_count()) break;
             PetalID::T old_id = player.get_loadout_ids(pos);
+            if (old_id == PetalID::kCorruption) break;
             if (old_id != PetalID::kNone && old_id != PetalID::kBasic) {
                 uint8_t rarity = PETAL_DATA[old_id].rarity;
                 player.set_score(player.get_score() + RARITY_TO_XP[rarity]);
@@ -153,6 +214,7 @@ void Client::on_message(WebSocket *ws, std::string_view message, uint64_t code) 
             uint8_t pos1 = reader.read<uint8_t>();
             if (pos1 >= MAX_SLOT_COUNT + player.get_loadout_count()) break;
             uint8_t pos2 = reader.read<uint8_t>();
+            if (player.get_loadout_ids(pos1) == PetalID::kCorruption || player.get_loadout_ids(pos2) == PetalID::kCorruption) break;
             if (pos2 >= MAX_SLOT_COUNT + player.get_loadout_count()) break;
             PetalID::T tmp = player.get_loadout_ids(pos1);
             player.set_loadout_ids(pos1, player.get_loadout_ids(pos2));

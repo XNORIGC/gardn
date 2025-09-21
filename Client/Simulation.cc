@@ -16,7 +16,7 @@ void Entity::tick_lerp(float amt) {
             x.step(amt);
             y.step(amt);
         }
-        if (has_component(kDrop) || has_component(kWeb) || has_component(kChat)) {
+        if (has_component(kDrop) || has_component(kWeb) || has_component(kPoisonWeb) || has_component(kChat)) {
             if (lifetime < TPS)
                 animation = lerp(animation, 1, amt * 0.75);
             else animation = 1;

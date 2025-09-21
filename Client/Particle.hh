@@ -30,5 +30,6 @@ namespace Particle {
     void tick_title(Renderer &, double);
     void tick_game(Renderer &, double);
     void add_unique_particle(float, float);
+    void add_mythic_particle(float, float);
     void add_revival_particle(float, float);
 }
